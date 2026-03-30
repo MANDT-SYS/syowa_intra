@@ -1,9 +1,14 @@
 //ホームページ
 import { auth0 } from "@/lib/auth0";
+import { Metadata } from "next";
 import './globals.css';
 import Button from '@/app/components/elements/Button';
 import TodoApp from '@/features/todo/components/TodoApp';
 import { getTodos } from '@/features/todo/server/read';
+
+export const metadata: Metadata = {
+  title: process.env.NEXT_PUBLIC_TITLE,//タブ表示タイトル
+};
 
 export default async function Home() {
   //auth0でログインしたユーザー情報を取得
