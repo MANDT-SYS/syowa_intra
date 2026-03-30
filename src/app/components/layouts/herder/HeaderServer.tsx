@@ -36,7 +36,7 @@ export default async function HeaderServer() {
       //システムタイトル
       systemTitle={ConstList.SYS_TITLE}
       //デバッグローカル
-      debugLocal={ConstList.DEBUG_LOCAL}
+      //debugLocal={ConstList.DEBUG_LOCAL}
       //ユーザー名
       userName={user.name}
       //メニュー項目

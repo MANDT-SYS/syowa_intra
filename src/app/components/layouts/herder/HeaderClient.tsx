@@ -41,11 +41,13 @@ import AppsIcon from "@mui/icons-material/Apps";//アプリ
 //アプリリンク・メニュー項目
 import type { HeaderAppItem, HeaderMenuItem } from "@/types/interface";
 
+const isDev = process.env.NODE_ENV === "development";
+
 type Props = {
   //システムタイトル
   systemTitle: string;
   //デバッグローカル
-  debugLocal: boolean;
+  //debugLocal: boolean;
   //ユーザー名
   userName: string;
   //メニュー項目
@@ -80,7 +82,7 @@ function getMenuIcon(iconKey: string) {
 
 export default function HeaderClient({
   systemTitle,
-  debugLocal,
+  //debugLocal,
   userName,
   menuItems,
   appLinks,
@@ -155,7 +157,7 @@ export default function HeaderClient({
   return (
     <>
       <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static" color={debugLocal ? "secondary" : "primary"}>
+        <AppBar position="static" color={isDev ? "secondary" : "warning"}>
           <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
             {/* ハンバーガーメニューアイコン */}
             <IconButton
@@ -200,7 +202,7 @@ export default function HeaderClient({
               </Typography>
 
             {/* ローカルの場合、ローカルモードと表示 */}
-              {debugLocal && (
+              {isDev && (
                 <Typography variant="body2" sx={{ ml: 1 }}>
                   ローカルモード
                 </Typography>
