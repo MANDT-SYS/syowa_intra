@@ -142,7 +142,6 @@ export default function HeaderClient({
       {/* ハンバーガーメニュー内のログアウトボタン */}
       <Box sx={{ p: 2 }}>
         <Button
-          //component={Link}
           href="/auth/logout"
           variant="outlined"
           startIcon={<LogoutIcon />}
@@ -237,7 +236,6 @@ export default function HeaderClient({
             {/* ログアウトボタン */}
             {!isMobile && (
               <IconButton 
-              //component={Link} 
               href="/auth/logout" color="inherit" size="large">
                 <LogoutIcon />
               </IconButton>
