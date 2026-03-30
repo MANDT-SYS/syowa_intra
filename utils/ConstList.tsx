@@ -3,7 +3,12 @@ export const ConstList = {
   VERSION: 1,//ローカル
   //VERSION: 1,//本番
 
-  REDIRECT_URL: 'http://localhost:3000/', //ローカル
+  //APIローカルorサーバー切り替え/////////////////////////////////
+  //切り替えの定数
+ // DEBUG_LOCAL: true, //ローカル
+  //DEBUG_LOCAL: false, //本番
+
+  //REDIRECT_URL: 'http://localhost:3000/', //ローカル
   //REDIRECT_URL: `https://system.syowa.com/kosu/home`, //本番
 
   DOMAIN: 'm-and-t.jp.auth0.com', // Auth0 のドメイン
@@ -36,10 +41,7 @@ export const ConstList = {
   FILE_PATH: 'https://system.syowa.com/files/',
   LOCAL_FILE_PATH: 'http://localhost/files/',
 
-  //APIローカルorサーバー切り替え/////////////////////////////////
-  //切り替えの定数
-  DEBUG_LOCAL: true, //ローカル
-  //DEBUG_LOCAL: false, //本番
+
 
   NUM_Neg1: -1,
 
@@ -69,9 +71,6 @@ export const ConstList = {
   BUSYO_5_2k: 14,
   BUSYO_SUMITOMO: 15,
   BUSYO_BIB: 9, // 半導体テストBUの部署ID
-
-
-
 
 
   // DataGridに使用しているスタイル

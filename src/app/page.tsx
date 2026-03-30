@@ -13,6 +13,8 @@ export default async function Home() {
   if (!session) {
     return (
       <main>
+        <p>ログインしてください</p>
+        <p>はやく！</p>
         <a href="/auth/login?screen_hint=signup">
           <Button>Sign up</Button>
         </a>
