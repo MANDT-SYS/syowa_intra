@@ -1,7 +1,7 @@
 export const ConstList = {
   //M2M認証に使用する
-  // API_CLIENT_ID: 'CYIoJtYhK6n5sYhpGAuaOAOEdX5DSBpW', 
-  // AUDIENCE: 'https://m-and-t.jp.auth0.com/api/v2/',
+  API_CLIENT_ID: 'CYIoJtYhK6n5sYhpGAuaOAOEdX5DSBpW', 
+  AUDIENCE: 'https://m-and-t.jp.auth0.com/api/v2/',
 
   SYS_TOPDOMAIN: '/intra',  //システムトップドメイン
 
@@ -9,19 +9,19 @@ export const ConstList = {
 
 
   //シークレットトークンを使用したアクセストークン取得用URL
-  // TOKEN_URL: `https://m-and-t.jp.auth0.com/oauth/token`,
-  // PG_API_DOMAIN: 'https://keiri-system.local',
-  // PG_API_URL: 'https://keiri-system.local/api/pg_api.php',
-  // LOCAL_PG_API_URL: 'http://localhost/kosuApi/pg_api.php',
+  TOKEN_URL: `https://m-and-t.jp.auth0.com/oauth/token`,
+  PG_API_DOMAIN: 'https://keiri-system.local',
+  PG_API_URL: 'https://keiri-system.local/api/pg_api.php',
+  LOCAL_PG_API_URL: 'http://localhost/kosuApi/pg_api.php',
 
-  // API: 'https://system.syowa.com/api/',
-  // AUTHENTICATION_API: 'https://system.syowa.com/AuthenticationApi/',
-  // SERVER_API: 'https://keiri-system.local/api/',
-  // LOCAL_API: 'http://localhost/',
-  // LOCAL_AUTHENTICATION_API: 'http://localhost/AuthenticationApi/',
+  API: 'https://system.syowa.com/api/',
+  AUTHENTICATION_API: 'https://system.syowa.com/AuthenticationApi/',
+  SERVER_API: 'https://keiri-system.local/api/',
+  LOCAL_API: 'http://localhost/',
+  LOCAL_AUTHENTICATION_API: 'http://localhost/AuthenticationApi/',
 
-  // FILE_PATH: 'https://system.syowa.com/files/',
-  // LOCAL_FILE_PATH: 'http://localhost/files/',
+  FILE_PATH: 'https://system.syowa.com/files/',
+  LOCAL_FILE_PATH: 'http://localhost/files/',
 
   NUM_Neg1: -1,
 
