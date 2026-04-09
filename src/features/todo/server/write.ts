@@ -1,35 +1,31 @@
 //server専用モジュール
 import "server-only";//クライアントから使えないようにする安全装置
 import { auth0 } from "@/lib/auth0";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import type { Todo } from "@/types/interface";
+import { supabase } from "@/lib/supabase";
+import type { AuthContext, Todo } from "@/types/interface";
+import { sanitizeText } from '@/lib/sanitize';
 
 //サーバーコンポーネント（page.tsx）からデータ取得または、Server Actionの両方から呼ばれる。
 
-//★★★★★★★★★★★★★★★★★★★★
-//★★★★★★★★データ追加★★★★★★★
-//★★★★★★★★★★★★★★★★★★★★
-  export const insertTodo = async (title: string): Promise<Todo> => {
-    const session = await auth0.getSession();
+//★★★★★★★★★★★★★★★★★★★★★★
+//★★★★★★★★データ登録処理★★★★★★★
+//★★★★★★★★★★★★★★★★★★★★★★
+  export const insertTodo = async (title: string, ctx: AuthContext): Promise<Todo> => {
   
-    if (!session?.user) {
-      throw new Error("Unauthorized");
-    }
+    //タイトルをサニタイズ
+    const sanitizedTitle = sanitizeText(title, {
+      maxLength: 100,
+      fieldName: "タイトル",
+    });
   
-    const trimmedTitle = title.trim();
-  
-    if (!trimmedTitle) {
-      throw new Error("タイトルは必須です。");
-    }
-  
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("todo")
       .insert({
-        title: trimmedTitle,
-        // user_id: session.user.sub, // 必要なら保存
+        title: sanitizedTitle,
       })
       .select()
       .single();
+
     if (error) {
       console.error("追加失敗:", error.message);
       throw new Error("Todoの追加に失敗しました。");
@@ -42,17 +38,12 @@ import type { Todo } from "@/types/interface";
     return data;
   };
   
-//★★★★★★★★★★★★★★★★★★★★
-//★★★★★★★★データ削除★★★★★★★
-//★★★★★★★★★★★★★★★★★★★★
-  export const removeTodo = async (id: number): Promise<void> => {
-    const session = await auth0.getSession();
-  
-    if (!session?.user) {
-      throw new Error("Unauthorized");
-    }
-  
-    const { error } = await supabaseAdmin
+//★★★★★★★★★★★★★★★★★★★★★★
+//★★★★★★★★データ削除処理★★★★★★★
+//★★★★★★★★★★★★★★★★★★★★★★
+  export const removeTodo = async (id: number, ctx: AuthContext): Promise<void> => {
+
+    const { error } = await supabase
       .from("todo")
       .delete()
       .eq("id", id);

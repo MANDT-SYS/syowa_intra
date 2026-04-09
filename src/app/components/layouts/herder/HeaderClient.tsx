@@ -41,13 +41,15 @@ import AppsIcon from "@mui/icons-material/Apps";//アプリ
 //アプリリンク・メニュー項目
 import type { HeaderAppItem, HeaderMenuItem } from "@/types/interface";
 
-const isDev = process.env.NODE_ENV === "development";
+const isDev = process.env.NODE_ENV !== "production";
 
 type Props = {
   //システムタイトル
   systemTitle: string;
   //デバッグローカル
   //debugLocal: boolean;
+  //ユーザーID
+  userId: number;
   //ユーザー名
   userName: string;
   //メニュー項目
@@ -83,6 +85,7 @@ function getMenuIcon(iconKey: string) {
 export default function HeaderClient({
   systemTitle,
   //debugLocal,
+  userId,
   userName,
   menuItems,
   appLinks,
@@ -197,7 +200,8 @@ export default function HeaderClient({
                   textOverflow: "ellipsis",
                 }}
               >
-                {systemTitle}
+                {userId === 1 ? `${systemTitle} んなあああああ` : systemTitle}
+                
               </Typography>
 
             {/* ローカルの場合、ローカルモードと表示 */}
