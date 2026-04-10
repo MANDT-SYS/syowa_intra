@@ -5,17 +5,18 @@ import './globals.css';
 import Button from '@/app/components/elements/Button';
 import TodoApp from '@/features/todo/components/TodoApp';
 import { getTodos } from '@/features/todo/server/read';
+import { withAuth } from "@/lib/withAuth";
 
 export const metadata: Metadata = {
   title: process.env.NEXT_PUBLIC_TITLE,//タブ表示タイトル
 };
 
 export default async function Home() {
-  //auth0でログインしたユーザー情報を取得
+  //ログイン状況の結果でUI表示を分ける為、最初にauth0でログインしたユーザー情報を取得。
   const session = await auth0.getSession();
 
   // セッションがない場合、サインアップとログインボタンを表示
-  if (!session) {
+  if (!session?.user) {
     return (
       <main>
         <p>ログインしてください</p>
@@ -32,7 +33,9 @@ export default async function Home() {
 
   // セッションがある場合
   //初期レンダリング用のデータ取得
-  const todos = await getTodos();
+  const todos = await withAuth(async (ctx) => {
+    return getTodos(ctx);
+  });
 
   const links = [
     { href: "/about", label: "会社概要" },

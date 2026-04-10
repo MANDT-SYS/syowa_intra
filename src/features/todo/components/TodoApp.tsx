@@ -6,6 +6,7 @@ import TodoList from "@/features/todo/components/TodoList";
 import Button from "@/app/components/elements/Button";
 import { Todo } from "@/types/interface";
 import { useRouter } from "next/navigation";
+import TextInput from "@/app/components/elements/TextInput";
 
 //page.tsxからpropsでinitialTodosを受け取る
 type Props = {
@@ -38,8 +39,10 @@ export default function TodoApp({ initialTodos }: Props) {
   //★★★★★★追加ボタンクリック時の処理★★★★★★★
   //★★★★★★★★★★★★★★★★★★★★★★★★★★
   const handleAdd = async () => {
-    //タイトルの前後の空白を削除
-    const trimmedTitle = title.trim();
+
+    const trimmedTitle = title.trim();//タイトルの前後の空白を削除
+    if (trimmedTitle.length > 1000) return; // 長すぎる入力を拒否
+    if (/<script/i.test(trimmedTitle)) return; // scriptタグを拒否
     //タイトルが空の場合はエラーメッセージを表示
     if (!trimmedTitle) {
       setErrorMessage("タイトルを入力してください。");
@@ -80,7 +83,11 @@ export default function TodoApp({ initialTodos }: Props) {
       // 削除中のIDをセット
       setDeletingId(id);
       // Todoの削除処理（非同期）
-      await deleteTodoAction(id);
+      const result = await deleteTodoAction(id);
+      if (!result.success) {
+        setErrorMessage(result.error);
+        return;
+      }
       // 削除対象のTodoをステートから除外
       //再レンダリングの際はここでstateが更新される。
       setTodos((prev) => prev.filter((todo) => todo.id !== id));
@@ -92,7 +99,11 @@ export default function TodoApp({ initialTodos }: Props) {
     } catch (error) {
       // エラー発生時はコンソールに出力しエラーメッセージを表示
       console.error(error);
-      setErrorMessage("Todoの削除に失敗しました。");
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("Todoの削除に失敗しました。");
+      }
     } finally {
       // 削除中のIDをリセット
       setDeletingId(null);
@@ -106,18 +117,11 @@ export default function TodoApp({ initialTodos }: Props) {
       <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
         
         {/* タイトル入力フォーム */}
-        <input
-          type="text"
+        <TextInput
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={setTitle}
           placeholder="Todoを入力"
           disabled={isPending}
-          style={{
-            flex: 1,
-            padding: "10px 12px",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-          }}
         />
 
         {/* 追加ボタン */}

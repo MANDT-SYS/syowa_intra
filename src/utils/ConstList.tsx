@@ -1,12 +1,10 @@
 export const ConstList = {
+  
+  SYS_TITLE: '昭和産業イントラサイト',  //タイトル
+  
   //M2M認証に使用する
   // API_CLIENT_ID: 'CYIoJtYhK6n5sYhpGAuaOAOEdX5DSBpW', 
   // AUDIENCE: 'https://m-and-t.jp.auth0.com/api/v2/',
-
-  SYS_TOPDOMAIN: '/intra',  //システムトップドメイン
-
-  SYS_TITLE: '昭和産業イントラサイト',  //タイトル
-
 
   //シークレットトークンを使用したアクセストークン取得用URL
   // TOKEN_URL: `https://m-and-t.jp.auth0.com/oauth/token`,
@@ -25,18 +23,12 @@ export const ConstList = {
 
   NUM_Neg1: -1,
 
-  //エラー
-  // ERROR_MESSAGES : {
-  //   unexpected_error: '予期せぬエラーが発生しました。',
-  //   title_required: 'タイトルは必須です。',
-  // },
-
 
   // 権限
-  DEVELORER_AUTHORITY: 1, //開発者
-  ADMIN_AUTHORITY: 2, //管理者
-  KENGEN_AUTHORITY: 3, //権限者
-  NORMAL_AUTHORITY: 4, //一般
+  DEVELORER_AUTHORITY: 1, //開発者：全操作可能
+  ADMIN_AUTHORITY: 2, //管理者：全操作可能
+  KENGEN_AUTHORITY: 3, //権限者：閲覧・登録・削除可能
+  NORMAL_AUTHORITY: 4, //一般：閲覧のみ
 
   // 雇用形態
   HAKEN_EMPLOYMENT: 6,//派遣

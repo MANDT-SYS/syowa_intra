@@ -16,9 +16,17 @@ export type HeaderMenuItem = {
     iconSrc: string;
   };
   
-  export type HeaderUserInfo = {
-    name: string;
-    authorityId: number;
-    employmentStatusId: number;
-    divisionId: number;
+  //ユーザー情報
+  export type UserInfo = {
+    user_id: number;//ユーザーID
+    family_name: string;//姓
+    given_name: string;//名
+    accountancy_authority_id: number;//権限ID
+    employment_status_id: number;//雇用形態ID
+    division_id: number;//部門ID
+  };
+
+  export type AuthContext = {
+    sub: string;
+    user: UserInfo;
   };

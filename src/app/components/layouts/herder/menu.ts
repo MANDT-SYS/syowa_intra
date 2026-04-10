@@ -1,13 +1,13 @@
-import type { HeaderAppItem, HeaderMenuItem, HeaderUserInfo } from "@/types/interface";
-import { ConstList } from "../../../../../utils/ConstList";
+import type { HeaderAppItem, HeaderMenuItem, UserInfo } from "@/types/interface";
+import { ConstList } from "@/utils/ConstList";
 
-  export function buildHeaderMenu(user: HeaderUserInfo): HeaderMenuItem[] {
+  export function buildHeaderMenu(user: UserInfo): HeaderMenuItem[] {
 
     const items: HeaderMenuItem[] = [];
   
     //メニュー項目を作成
     //開発者権限の場合
-    if (user.authorityId === ConstList.DEVELORER_AUTHORITY) {
+    if (user.accountancy_authority_id === ConstList.DEVELORER_AUTHORITY) {
       return [
         { label: "ホーム", href: "/home", iconKey: "home" },
         { label: "マイページ", href: "/my_page", iconKey: "account" },

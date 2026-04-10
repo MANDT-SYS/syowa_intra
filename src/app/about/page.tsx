@@ -2,13 +2,6 @@ import { auth0 } from "@/lib/auth0";
 import Button from '@/app/components/elements/Button';
 
 export default async function About() {
-  //auth0でログインしたユーザー情報を取得
-  const session = await auth0.getSession();
-
-  // セッションがない場合、サインアップとログインボタンを表示
-  if (session) {
-    
-
   return (
     <main>
       
@@ -36,6 +29,5 @@ export default async function About() {
       
     </main>
   );
-}
 }
 
