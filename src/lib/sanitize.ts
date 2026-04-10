@@ -5,7 +5,6 @@
  */
 
 import "server-only";// クライアントからは使用不可
-import DOMPurify from 'isomorphic-dompurify';
 
 // オプションの型定義
 type SanitizeOptions = {
@@ -49,10 +48,7 @@ export const sanitizeText = (
   }
 
   // 4. HTMLタグ除去（完全無効化）
-  const sanitized = DOMPurify.sanitize(trimmed, {
-    ALLOWED_TAGS: [],
-    ALLOWED_ATTR: [],
-  });
+  const sanitized = trimmed.replace(/<[^>]*>/g, '');
 
   // 5. サニタイズ後の空チェック
   if (!allowEmpty && !sanitized) {
