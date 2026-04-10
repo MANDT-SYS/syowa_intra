@@ -6,6 +6,7 @@ import Button from '@/app/components/elements/Button';
 import TodoApp from '@/features/todo/components/TodoApp';
 import { getTodos } from '@/features/todo/server/read';
 import { withAuth } from "@/lib/withAuth";
+import Image from 'next/image';
 
 export const metadata: Metadata = {
   title: process.env.NEXT_PUBLIC_TITLE,//タブ表示タイトル
@@ -18,15 +19,27 @@ export default async function Home() {
   // セッションがない場合、サインアップとログインボタンを表示
   if (!session?.user) {
     return (
-      <main>
-        <p>ログインしてください</p>
-        <p>はやく！</p>
-        <a href="/auth/login?screen_hint=signup">
-          <Button>Sign up</Button>
-        </a>
-        <a href="/auth/login">
-          <Button>Log in</Button>
-        </a>
+      <main className="min-h-screen  flex flex-col items-center justify-center px-6 py-16">
+        <div className="flex flex-col items-center gap-10 w-full max-w-md">
+          <Image
+            src="/images/昭和イントラサイトロゴ.png"
+            alt="昭和産業イントラサイト"
+            width={780}
+            height={315}
+            className="h-auto w-full max-w-3xl object-contain"
+            priority
+          />
+    
+    
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full">
+            <a href="/auth/login?screen_hint=signup" className="inline-flex">
+              {/* <Button>Sign up</Button> */}
+            </a>
+            <a href="/auth/login" className="inline-flex">
+              <Button>ログイン</Button>
+            </a>
+          </div>
+        </div>
       </main>
     );
   }

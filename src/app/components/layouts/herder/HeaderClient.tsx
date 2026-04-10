@@ -159,7 +159,12 @@ export default function HeaderClient({
   return (
     <>
       <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static" color={isDev ? "secondary" : "warning"}>
+        <AppBar
+          position="static"
+          color={isDev ? "secondary" : undefined}
+          sx={!isDev ? { backgroundColor: "#86171F" } : undefined}
+        >
+   
           <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
             {/* ハンバーガーメニューアイコン */}
             <IconButton
