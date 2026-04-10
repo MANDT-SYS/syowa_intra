@@ -83,7 +83,11 @@ export default function TodoApp({ initialTodos }: Props) {
       // 削除中のIDをセット
       setDeletingId(id);
       // Todoの削除処理（非同期）
-      await deleteTodoAction(id);
+      const result = await deleteTodoAction(id);
+      if (!result.success) {
+        setErrorMessage(result.error);
+        return;
+      }
       // 削除対象のTodoをステートから除外
       //再レンダリングの際はここでstateが更新される。
       setTodos((prev) => prev.filter((todo) => todo.id !== id));

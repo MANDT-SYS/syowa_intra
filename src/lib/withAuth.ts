@@ -2,7 +2,6 @@
 import { auth0 } from "@/lib/auth0";
 import { getLoginUser } from "@/server/getLoginUser";
 import type { AuthContext, UserInfo } from "@/types/interface";
-import { ConstList } from "@/utils/ConstList";
 
 // ─────────────────────────────────────────
 // 認証チェック
@@ -35,20 +34,20 @@ export async function withAuth<T>(
 // 権限チェック付きラッパー
 // 指定したrole_idを「持っていない」ユーザーのみ通す
 // ─────────────────────────────────────────
-export async function withRole<T>(
-  // 「この権限IDは禁止」という配列で渡す
-  deniedRoleIds: number[],
-  handler: (ctx: AuthContext) => Promise<T>
-): Promise<T> {
+// export async function withRole<T>(
+//   // 「この権限IDは禁止」という配列で渡す
+//   deniedRoleIds: number[],
+//   handler: (ctx: AuthContext) => Promise<T>
+// ): Promise<T> {
   
-//認証チェック
-  return withAuth(async (ctx) => {
-    // ④ 権限チェック：禁止リストに含まれていたらエラー
-    if (deniedRoleIds.includes(Number(ctx.user.accountancy_authority_id))) {
-      throw new Error("権限がありません。"); // 権限なし
-    }
-    return handler(ctx);
-    // エラーではなくnullや特別な値を返して、画面のみで表示
-    //return null as T;
-  });
-}
+// //認証チェック
+//   return withAuth(async (ctx) => {
+//     // ④ 権限チェック：禁止リストに含まれていたらエラー
+//     if (deniedRoleIds.includes(Number(ctx.user.accountancy_authority_id))) {
+//       throw new Error("権限がありません。"); // 権限なし
+//     }
+//     return handler(ctx);
+//     // エラーではなくnullや特別な値を返して、画面のみで表示
+//     //return null as T;
+//   });
+// }

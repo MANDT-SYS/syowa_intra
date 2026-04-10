@@ -65,6 +65,8 @@ export async function middleware(request: NextRequest) {
     "connect-src 'self'",
     // ⑪ 混在コンテンツ対策：常にHTTPSへ自動アップグレード
     "upgrade-insecure-requests",
+    //Vercelのプレビュー機能（コメントUIとか）が iframe で読み込むのを容認
+    "frame-src 'self' https://vercel.live",
   ].join("; ");
 
   // ヘッダ複製＆セキュリティ値追加

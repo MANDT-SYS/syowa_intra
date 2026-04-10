@@ -2,7 +2,7 @@
 "use server";
 import "server-only";//書いておいた方が安全
 import { revalidatePath } from "next/cache";
-import { withAuth, withRole } from "@/lib/withAuth";
+import { withAuth} from "@/lib/withAuth";
 import { insertTodo,removeTodo } from "@/features/todo/server/write";
 import type { Todo } from "@/types/interface";
 import { ConstList } from "@/utils/ConstList";
@@ -27,13 +27,23 @@ export const addTodoAction = async (title: string): Promise<Todo> => {
 //★★★★★★★★★★★★★★★★★★★★
 //★★★★★★★データ削除★★★★★★★★
 //★★★★★★★★★★★★★★★★★★★★
-export const deleteTodoAction = async (id: number): Promise<{ deletedId: number }> => {
-  //認証＋権限チェック
-  //一般ユーザーの場合、削除不可
-  return withRole([ConstList.NORMAL_AUTHORITY], async (ctx) => {
-    //データ削除
+
+//削除結果の型定義
+export type DeleteTodoResult =
+  | { success: true; deletedId: number }
+  | { success: false; error: string };
+
+export const deleteTodoAction = async (
+  id: number
+): Promise<DeleteTodoResult> => {
+  return withAuth(async (ctx) => {
+    if (
+      Number(ctx.user.accountancy_authority_id) === ConstList.NORMAL_AUTHORITY
+    ) {
+      return { success: false, error: "権限がありません。" };
+    }
     await removeTodo(id, ctx);
     revalidatePath("/");
-    return { deletedId: id };
+    return { success: true, deletedId: id };
   });
 };
