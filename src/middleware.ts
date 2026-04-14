@@ -11,8 +11,47 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth0 } from "./lib/auth0";
 
+const ALLOWED_IPS = [
+  "153.156.22.153",  // 社内ネットワークのグローバルI
+];
+
+function ipToNum(ip: string): number {
+  return ip.split(".").reduce((acc, octet) => (acc << 8) + Number(octet), 0) >>> 0;
+}
+
+function isAllowed(ip: string): boolean {
+  const ipNum = ipToNum(ip);
+
+  return ALLOWED_IPS.some((entry) => {
+    if (entry.includes("/")) {
+      const [base, prefix] = entry.split("/");
+      const mask = ~((1 << (32 - Number(prefix))) - 1) >>> 0;
+      return (ipNum & mask) === (ipToNum(base) & mask);
+    }
+    return ip === entry;
+  });
+}
+
 // 認証＆セキュリティヘッダ付与用ミドルウェア
 export async function middleware(request: NextRequest) {
+  const ip =
+  request.headers.get("x-real-ip") ??
+  request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+  "";
+
+ // Vercelのログに出力される
+ console.log("=== Access attempt ===");
+ console.log("IP:", ip);
+ console.log("Path:", request.nextUrl.pathname);
+
+  // 開発環境判定（unsafe-eval許可制御用）
+  const isDev = process.env.NODE_ENV === "development";
+  
+ if (!isDev) {
+ if (!ip || !isAllowed(ip)) {
+   return new NextResponse("Forbidden", { status: 403 });
+ }
+}
   // 認証ミドルウェア実行（返されたレスポンスヘッダーを引き継ぐ）
   const response = await auth0.middleware(request);
 
@@ -28,8 +67,7 @@ export async function middleware(request: NextRequest) {
 
   // セキュリティ対策（XSSの保険）：リクエストの度に、middleware内でscript-srcで使うランダムなnonceを生成
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  // 開発環境判定（unsafe-eval許可制御用）
-  const isDev = process.env.NODE_ENV === "development";
+
 
   // Content-Security-Policyヘッダ生成（各行詳細はコメント参照）
   const csp = [
@@ -105,3 +143,5 @@ export const config = {
     },
   ],
 };
+
+
