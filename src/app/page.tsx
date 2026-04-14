@@ -7,6 +7,7 @@ import TodoApp from '@/features/todo/components/TodoApp';
 import { getTodos } from '@/features/todo/server/read';
 import { withAuth } from "@/lib/withAuth";
 import Image from 'next/image';
+import { QuickLinks } from "@/features/quickLinks/QuickLinks";
 
 export const metadata: Metadata = {
   title: process.env.NEXT_PUBLIC_TITLE,//タブ表示タイトル
@@ -29,8 +30,6 @@ export default async function Home() {
             className="h-auto w-full max-w-3xl object-contain"
             priority
           />
-    
-    
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full">
             <a href="/auth/login?screen_hint=signup" className="inline-flex">
               {/* <Button>Sign up</Button> */}
@@ -50,55 +49,69 @@ export default async function Home() {
     return getTodos(ctx);
   });
 
-  const links = [
-    { href: "/about", label: "会社概要" },
-    { href: "#", label: "人事ポータル" },
-    { href: "#", label: "お知らせ" },
-    { href: "#", label: "FAQ" },
-  
-  ];
+  const quickLinkItems = [
+    { href: "/document", title: "書類管理" },
+    { href: "/calendar", title: "社内カレンダー" },
+    { href: "#", title: "お知らせ" },
+    { href: "#", title: "FAQ" },
+  ] as const;
 
   return (
     <main>
+      {/* ページ幅を広げる: "max-w-7xl" を指定し余白を調整 */}
       
-      {/* <Image src="/サンプル.png" alt="sample" width={150} height={150} /> */}
     
-    <section className="min-h-screen bg-[#faf9f7] flex flex-col items-center justify-center px-6 py-16">
-      <main className="w-full max-w-xl text-center space-y-12">
-        
-        <div className="space-y-4">
-          <h1 className="text-2xl font-medium tracking-wide text-[#3d3a36]">
-            昭和産業株式会社 イントラサイト
-          </h1>
-          <p className="text-lg text-[#6b6560] leading-relaxed">
-            昭和産業のイントラサイトです。
-          </p>
-        </div>
+      <section
+        className={
+          [
+            // 画面の高さを最低でも一杯にする（全画面表示を保証）
+            "min-h-screen",
+            // ページ全体の背景色を指定（生成AI設計書色: #faf9f7）
+            "bg-[#faf9f7]",
+            // 子要素を縦方向に並べる
+            "flex",
+            "flex-col",
+            // 子要素を中央寄せ（横方向）
+            "items-center",
+            // 子要素を中央寄せ（縦方向）
+            "justify-center",
+            // 横方向の余白を設定
+            "px-4",
+            // 縦方向の余白を設定
+            "py-16",
+          ].join(" ")
+        }
+      >
+        <main className="w-full max-w-7xl mx-auto text-center space-y-12">
+          <div className="space-y-4">
+          <div className="flex justify-center w-full">
+        <Image
+          src="/images/昭和イントラサイトロゴ.png"
+          alt="昭和産業イントラサイト"
+          width={480}
+          height={190}
+     
+          className="h-auto w-full max-w-xs object-contain mx-auto"
+          priority
+        />
+      </div>
+            
+            <p className="text-lg text-[#6b6560] leading-relaxed">
+              昭和産業のイントラサイトです。様々な情報を発信します。
+            </p>
+          </div>
 
-        {/* クイックリンク */}
-        <nav className="flex flex-wrap justify-center gap-3">
-          {links.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="px-5 py-2.5 rounded-lg bg-white/80 border border-[#e8e4df] text-[#5a5550] hover:bg-white hover:border-[#c4a77d] transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
-        <section>
-        <TodoApp initialTodos={todos} />
+          {/* クイックリンク（カードUI） */}
+          <QuickLinks items={[...quickLinkItems]} />
+          <section>
+            <TodoApp initialTodos={todos} />
+          </section>
+        </main>
+
+        <footer className="mt-16 text-sm text-[#9a948c]">
+          © 2026 昭和産業株式会社
+        </footer>
       </section>
-      </main>
-
-      <footer className="mt-16 text-sm text-[#9a948c]">
-        © 2026 昭和産業株式会社
-      </footer>
-    </section>
-
-      
     </main>
   );
 }
-

@@ -1,0 +1,94 @@
+/* クイックリンク：4カード横並び（画像デザイン準拠） */
+
+/* クイックリンク全体をグリッドで横並び（PC4列, タブレット2列, モバイル1列） */
+.grid {
+  display: grid; /* グリッドレイアウトで均等に並べる */
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 4列レイアウト */
+  gap: 1rem; /* カード間の余白 */
+  width: 100%; /* グリッド全体幅 */
+  max-width: 1120px; /* グリッドの最大幅 */
+  margin-inline: auto; /* 横中央寄せ */
+}
+
+/* 1024px以下の画面幅では2列に変更 */
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 560px以下（スマホ）は1列表示 */
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* カード本体のスタイル */
+.card {
+  display: flex; /* 子要素をflex縦並び */
+  flex-direction: column; /* 縦並び */
+  align-items: center; /* 横中央揃え */
+  text-align: center; /* テキスト中央揃え */
+  padding: 1.5rem 1.25rem 1.25rem; /* 内側余白（上,左右,下） */
+  border-radius: 12px; /* 角丸 */
+  min-height: 260px; /* 最低高さ */
+}
+
+/* 背景バリエーション：ピンク */
+.cardPink {
+  background: #fff0f3;
+}
+/* 背景バリエーション：グリーン */
+.cardGreen {
+  background: #e8f5e9;
+}
+/* 背景バリエーション：シアン */
+.cardCyan {
+  background: #e0f7fa;
+}
+/* 背景バリエーション：ラベンダー */
+.cardLavender {
+  background: #ede7f6;
+}
+
+/* アイコン部分のプレースホルダ円 */
+.iconPlaceholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%; /* 真円 */
+  background: #cfd8dc; /* グレー */
+  flex-shrink: 0;
+  margin-bottom: 1rem; /* 下余白 */
+}
+
+/* カードタイトル */
+.title {
+  font-size: 1.0625rem;
+  font-weight: 600; /* 太字 */
+  color: #1a1a1a; /* 文字色 */
+  line-height: 1.35;
+  margin: 0 0 0.75rem; /* 下余白 */
+}
+
+/* カード説明文 */
+.description {
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: #1a1a1a;
+  margin: 0;
+  flex: 1 1 auto; /* 可変長：下部のアクションを一番下に寄せる */
+}
+
+/* ボタンなどアクション部分 */
+.actions {
+  margin-top: auto; /* 下寄せ */
+  padding-top: 1.25rem; /* 上余白 */
+}
+
+/* ボタン内の矢印装飾 */
+.arrow {
+  margin-left: 0.25rem; /* 左余白 */
+  font-weight: 600;
+  letter-spacing: 0.02em; /* 字間少し広め */
+}

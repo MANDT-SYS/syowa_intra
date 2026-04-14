@@ -1,0 +1,53 @@
+---
+description: プロジェクト全体の基本ルール
+globs: **/*
+alwaysApply: true
+---
+
+# プロジェクト概要
+
+- Next.js (App Router) + TypeScript のWebアプリ
+- ホスティング: Vercel
+- DB: Supabase
+- Storage:Supabase
+- 認証: Auth0
+
+# 技術スタック
+
+- Next.js 14+ (App Router)
+- TypeScript
+- Supabase (@supabase/supabase-js)
+- Tailwind CSS
+- Vercel にデプロイ
+
+# コーディング規約
+
+- 言語は TypeScript。any 禁止、型を明示する
+- コンポーネントはすべて関数コンポーネント + named export
+- `"use client"` は必要な場合のみ付与。デフォルトは Server Component
+- データの登録や変更、削除、取得の際の認証は`lib/withAuth.ts`のwithAuthを通す。
+
+
+# Supabase ルール
+
+- クライアント生成は `lib/supabase.ts`
+
+# エラーハンドリング
+
+- Supabase の呼び出しは `{ data, error }` を必ずチェック
+- ユーザー向けエラーは日本語で表示
+
+# レスポンス言語
+
+- コード中のコメントは日本語
+- 説明・回答も日本語で行う
+
+#実装機能について
+- 現状下記内機能が追加が確定している。
+- ①会社内で使用しているwebアプリのリンクボタン
+- ②社内カレンダー（PDF）
+- ③書類管理機能
+- ④お知らせ
+
+#各機能詳細
+- ①会社内で使用しているwebアプリのリンクボタン

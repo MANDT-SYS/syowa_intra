@@ -205,7 +205,7 @@ export default function HeaderClient({
                   textOverflow: "ellipsis",
                 }}
               >
-                {userId === 1 ? `${systemTitle} んなあああああ` : systemTitle}
+                {userId === 1 ? `${systemTitle} ` : systemTitle}
                 
               </Typography>
 
