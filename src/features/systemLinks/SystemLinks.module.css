@@ -1,0 +1,192 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap");
+
+/* ── Section ── */
+.section {
+  font-family: "Noto Sans JP", "Outfit", sans-serif;
+  padding: 64px 24px;
+  background: #f6f5f2;
+  position: relative;
+}
+
+.section::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.03) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+.inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Header ── */
+.header {
+  margin-bottom: 48px;
+}
+
+.label {
+  font-family: "Outfit", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #9a9a9a;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+  line-height: 1.3;
+}
+
+.titleAccent {
+  display: inline-block;
+  width: 28px;
+  height: 3px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  margin-left: 12px;
+  vertical-align: middle;
+  position: relative;
+  top: -2px;
+}
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Card ── */
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px 24px 24px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  text-decoration: none;
+  display: block;
+  color: inherit;
+  animation: fadeUp 0.5s ease forwards;
+  opacity: 0;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--card-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.card:hover::before {
+  transform: scaleX(1);
+}
+
+/* ── Icon ── */
+.iconWrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  background: var(--icon-bg);
+}
+
+.card:hover .iconWrap {
+  transform: scale(1.05);
+}
+
+/* ── Text ── */
+.cardName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.arrow {
+  font-family: "Outfit", sans-serif;
+  font-size: 18px;
+  color: #9a9a9a;
+  opacity: 0;
+  transform: translateX(0);
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  font-weight: 300;
+}
+
+.card:hover .arrow {
+  transform: translateX(4px);
+  opacity: 1;
+}
+
+.cardDesc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #6b6b6b;
+  font-weight: 400;
+}
+
+/* ── Animation ── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
