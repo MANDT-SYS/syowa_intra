@@ -11,29 +11,45 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth0 } from "./lib/auth0";
 
+// アクセスを許可するIPアドレスリスト（ここでは社内ネットワークのグローバルIPを指定）
 const ALLOWED_IPS = [
-  "153.156.22.153",  // 社内ネットワークのグローバルI
+  "153.156.22.153",  // 社内ネットワークのグローバルIP
 ];
 
+// IPv4アドレス（例: 153.156.22.153）を32bitの数値に変換する関数
 function ipToNum(ip: string): number {
+  // "."で区切って配列にし、左シフトと加算で32ビット数値に詰める
+  // 例: [153,156,22,153] -> (153<<24) + (156<<16) + (22<<8) + 153
   return ip.split(".").reduce((acc, octet) => (acc << 8) + Number(octet), 0) >>> 0;
 }
 
+// 指定したIPアドレスがALLOWED_IPSリストに含まれているか判定する関数
 function isAllowed(ip: string): boolean {
+  // 入力IPアドレスを数値化
   const ipNum = ipToNum(ip);
 
+  // ALLOWED_IPS配列の全要素を走査
   return ALLOWED_IPS.some((entry) => {
+    // CIDR表記（xxx.xxx.xxx.xxx/xx）が含まれている場合
     if (entry.includes("/")) {
+      // 基点IPとプレフィックス長部分に分割
       const [base, prefix] = entry.split("/");
+      // サブネットマスク作成（プレフィックス長だけビットを立てる。例：/24→255.255.255.0）
       const mask = ~((1 << (32 - Number(prefix))) - 1) >>> 0;
+      // 入力IPと基点IPをマスクで比較。ネットワーク部が一致すれば許可
       return (ipNum & mask) === (ipToNum(base) & mask);
     }
+    // 単一のIP（CIDRでない）なら完全一致で判定
     return ip === entry;
   });
 }
 
 // 認証＆セキュリティヘッダ付与用ミドルウェア
 export async function middleware(request: NextRequest) {
+
+  // 開発環境判定（unsafe-eval許可制御用）
+  const isDev = process.env.NODE_ENV === "development";
+
   const ip =
   request.headers.get("x-real-ip") ??
   request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -44,16 +60,14 @@ export async function middleware(request: NextRequest) {
  console.log("IP:", ip);
  console.log("Path:", request.nextUrl.pathname);
 
-  // 開発環境判定（unsafe-eval許可制御用）
-  const isDev = process.env.NODE_ENV === "development";
-  
+
+
  if (!isDev) {
  if (!ip || !isAllowed(ip)) {
    return new NextResponse("Forbidden", { status: 403 });
  }
 }
-  // 認証ミドルウェア実行（返されたレスポンスヘッダーを引き継ぐ）
-  const response = await auth0.middleware(request);
+
 
    // Auth0 がリダイレクト（ログイン画面への誘導,、認証エラー等）を返した場合は
   // CSP を付けずにそのまま返す
@@ -61,6 +75,9 @@ export async function middleware(request: NextRequest) {
   // CSP は「ブラウザがHTMLを描画するとき」に効くものなので、リダイレクトに CSP を付けても意味がない。
   //攻撃者が XSS を仕掛けるのは「ページが表示される（200）」とき。
   // リダイレクト（302）のレスポンスにスクリプトを注入しても、ブラウザはそのHTMLを描画せずに飛ぶので意味がない。
+  // 認証ミドルウェア実行（返されたレスポンスヘッダーを引き継ぐ）
+  const response = await auth0.middleware(request);
+
   if (response.status !== 200) {
     return response;
   }
@@ -104,7 +121,7 @@ export async function middleware(request: NextRequest) {
     // ⑪ 混在コンテンツ対策：常にHTTPSへ自動アップグレード
     "upgrade-insecure-requests",
     //Vercelのプレビュー機能（コメントUIとか）が iframe で読み込むのを容認
-    "frame-src 'self' https://vercel.live",
+    "frame-src 'self' https://vercel.live https://*.supabase.co",
   ].join("; ");
 
   // ヘッダ複製＆セキュリティ値追加

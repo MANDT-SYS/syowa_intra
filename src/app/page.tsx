@@ -49,11 +49,12 @@ export default async function Home() {
     return getTodos(ctx);
   });
 
+  //クイックリンク項目
   const quickLinkItems = [
-    { href: "/document", title: "書類管理" },
-    { href: "/calendar", title: "社内カレンダー" },
-    { href: "#", title: "お知らせ" },
-    { href: "#", title: "FAQ" },
+    { href: "/document", title: "書類管理", description: "開発中です" },
+    { href: "/calendar", title: "社内カレンダー", description: "社内カレンダーです" },
+    { href: "#", title: "お知らせ", description: "開発中です" },
+    { href: "#", title: "従業員検索", description: "開発中です" },
   ] as const;
 
   return (
@@ -103,6 +104,7 @@ export default async function Home() {
 
           {/* クイックリンク（カードUI） */}
           <QuickLinks items={[...quickLinkItems]} />
+
           <section>
             <TodoApp initialTodos={todos} />
           </section>
