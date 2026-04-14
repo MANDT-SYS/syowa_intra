@@ -23,9 +23,14 @@ export function middleware(request: NextRequest) {
   request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
   "";
 
-if (!isAllowed(ip)) {
-  return new NextResponse("Forbidden", { status: 403 });
-}
+ // Vercelのログに出力される
+ console.log("=== Access attempt ===");
+ console.log("IP:", ip);
+ console.log("Path:", request.nextUrl.pathname);
+
+ if (!ip || !isAllowed(ip)) {
+   return new NextResponse("Forbidden", { status: 403 });
+ }
 
 return NextResponse.next();
 }
