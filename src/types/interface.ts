@@ -1,19 +1,28 @@
 export interface Todo {
-    id: number
-    title: string
+    id: number//TODOID
+    title: string//TODOタイトル
+}
+
+export interface CalendarRecord {
+    id: string//カレンダーID
+    year: number//年
+    title: string//タイトル
+    storage_path: string//ストレージパス
+    created_at: string//作成日時
+    updated_at: string//更新日時
 }
 
 //ヘッダー
 export type HeaderMenuItem = {
-    label: string;
-    href: string;
-    iconKey: string;
+    label: string;//ヘッダー項目名
+    href: string;//ヘッダー項目リンク
+    iconKey: string;//ヘッダー項目アイコンキー
   };
   
   export type HeaderAppItem = {
-    label: string;
-    href: string;
-    iconSrc: string;
+    label: string;//ヘッダー項目名
+    href: string;//ヘッダー項目リンク
+    iconSrc: string;//ヘッダー項目アイコン
   };
   
   //ユーザー情報
@@ -27,6 +36,6 @@ export type HeaderMenuItem = {
   };
 
   export type AuthContext = {
-    sub: string;
-    user: UserInfo;
+    sub: string;//id
+    user: UserInfo;//ユーザー情報
   };

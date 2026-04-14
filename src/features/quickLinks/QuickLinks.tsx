@@ -6,25 +6,27 @@ import styles from "./QuickLinks.module.css";
 
 /** カード背景（左から順にピンク・緑・水色・ラベンダー） */
 const CARD_VARIANTS = [
-  styles.cardPink,
-  styles.cardGreen,
-  styles.cardCyan,
-  styles.cardLavender,
+  styles.cardPink,//ピンク
+  styles.cardGreen,//緑
+  styles.cardCyan,//水色
+  styles.cardLavender,//ラベンダー
 ] as const;
 
+//クイックリンク項目
 export type QuickLinkItem = {
-  href: string;
-  title: string;
+  href: string;//リンク
+  title: string;//タイトル
   /** 未指定時はプレースホルダ文言 */
-  description?: string;
+  description?: string;//説明
 };
 
+//クイックリンクプロパティ
 type QuickLinksProps = {
-  items: QuickLinkItem[];
+  items: QuickLinkItem[];//クイックリンク項目
 };
 
 const DEFAULT_DESCRIPTION =
-  "説明が入ります。説明が入ります。説明が入ります。";
+  "説明が入ります。";
 
 export function QuickLinks({ items }: QuickLinksProps) {
   return (
@@ -42,12 +44,22 @@ export function QuickLinks({ items }: QuickLinksProps) {
               {item.description ?? DEFAULT_DESCRIPTION}
             </p>
             <div className={styles.actions}>
-              <Button href={item.href} sx={{ textTransform: "none" }}>
+              <Button
+                type="button"
+                onClick={() => window.location.href = item.href}
+                sx={{ textTransform: "none" }}
+                style={{
+                  padding: "10px 16px",
+                  border: "none",
+                  borderRadius: "8px",
+                }}
+              >
                 移動
                 <span className={styles.arrow} aria-hidden>
                   &gt;
                 </span>
               </Button>
+         
             </div>
           </article>
         );
