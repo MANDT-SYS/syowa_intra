@@ -9,10 +9,16 @@ const BUCKET = "calendars";
  * PDFをSupabase Storageにアップロードし、storage_pathを返す
  */
 const uploadPdf = async (year: number, file: File): Promise<string> => {
+  //storagePathを生成。ファイル名は年.pdf
   const storagePath = `calendars/${year}.pdf`;
+  // PDFファイル（Fileオブジェクト）はそのままsupabase-jsのstorageにはアップロードできないため、
+  // まずファイルの中身をarrayBuffer（＝生のバイト配列）として取得し、
+  // それをNode.jsのBuffer（バイト列を扱うクラス。バイナリファイルやバイト操作でよく使う）に変換する。
+  // Supabase StorageのアップロードAPIはNode.js環境ではBuffer（またはUint8Array等）の形式を期待するためこの変換が必要。
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const { error } = await supabaseAdmin.storage
+  //サービスロールキーを使用して、Storageにアップロード
+  const { error } = await supabaseAdmin.storage 
     .from(BUCKET)
     .upload(storagePath, buffer, {
       contentType: "application/pdf",

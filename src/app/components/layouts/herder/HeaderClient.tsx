@@ -40,6 +40,7 @@ import AppsIcon from "@mui/icons-material/Apps";//アプリ
 
 //アプリリンク・メニュー項目
 import type { HeaderAppItem, HeaderMenuItem } from "@/types/interface";
+import { ConstList } from "@/utils/ConstList";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -159,13 +160,21 @@ export default function HeaderClient({
   return (
     <>
       <Box sx={{ flexGrow: 1 }}>
+        {/* 
+          ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+          背景色を設定
+            - isDev（開発）時は color="secondary"
+            - 本番時は sx で backgroundColor を 昭和レッド（ConstList.RED_COLOR） に
+          ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+        */}
         <AppBar
           position="static"
-          color={isDev ? "secondary" : undefined}
-          sx={!isDev ? { backgroundColor: "#86171F" } : undefined}
+          // color={isDev ? "secondary" : undefined}
+          color={isDev ? "inherit" : undefined}
+          sx={!isDev ? { backgroundColor: ConstList.RED_COLOR } : undefined}
         >
-   
-          <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
+          {/* ツールバーの高さを高くする minHeight: { xs: 80, sm: 96 } */}
+          <Toolbar sx={{ minHeight: { xs: 80, sm: 96 } }}>
             {/* ハンバーガーメニューアイコン */}
             <IconButton
               size={isMobile ? "small" : "large"}
@@ -185,29 +194,40 @@ export default function HeaderClient({
 
             {/* ホームアイコン */}
             <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center", gap: 1 }}>
-              <IconButton
+              {/* <IconButton
                 component={Link}
                 href="/"
                 color="inherit"
                 size={isMobile ? "small" : "medium"}
               >
                 <HomeIcon />
-              </IconButton>
+              </IconButton> */}
 
-            {/* システムタイトル */}
-              <Typography
-                variant="h6"
-                component="div"
-                sx={{
-                  fontSize: isMobile ? "0.95rem" : isTablet ? "1rem" : "1.1rem",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+            {/* ロゴ画像（昭和イントラサイトロゴ.png を表示） */}
+            <Box
+              sx={{
+                height: isMobile ? 32 : isTablet ? 40 : 48, // 画面サイズごとに高さを可変
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <Link href="/">
+              <Image
+                src="/images/昭和イントラサイトロゴ.png"
+                alt="昭和イントラサイト ロゴ"
+                height={isMobile ? 48 : isTablet ? 64 : 80}
+                width={isMobile ? 180 : isTablet ? 240 : 320}
+                style={{
+                  // maxWidth: isMobile ? 120 : isTablet ? 160 : 200,
+                  objectFit: "contain",
+                  display: "block",
                 }}
-              >
-                {userId === 1 ? `${systemTitle} ` : systemTitle}
-                
-              </Typography>
+                priority
+              />
+        
+              </Link>
+            </Box>
+     
 
             {/* ローカルの場合、ローカルモードと表示 */}
               {isDev && (
@@ -226,7 +246,7 @@ export default function HeaderClient({
             >
               <AccountCircle />
               {!isMobile && (
-                <Typography sx={{ ml: 1, fontSize: isTablet ? "0.95rem" : "1rem" }}>
+                <Typography sx={{ ml: 1, fontSize: isTablet ? "1.05rem" : "1.2rem" }}>
                   {userName}
                 </Typography>
               )}

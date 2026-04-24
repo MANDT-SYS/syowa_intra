@@ -3,10 +3,10 @@ import "server-only";
 import { revalidatePath } from "next/cache";
 import { withAuth } from "@/lib/withAuth";
 import {
-  insertCalendar,
-  updateCalendar,
-  removeCalendar,
-  getPdfPublicUrl,
+  insertCalendar,//カレンダー新規追加
+  updateCalendar,//カレンダー更新
+  removeCalendar,//カレンダー削除
+  getPdfPublicUrl,//PDF公開URL取得
 } from "@/features/calendar/server/write";
 import { getCalendars } from "@/features/calendar/server/read";
 import type { CalendarRecord } from "@/types/interface";

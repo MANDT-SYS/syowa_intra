@@ -5,12 +5,14 @@ import { getPdfPublicUrl } from "@/features/calendar/server/write";
 import CalendarApp from "@/features/calendar/components/CalendarApp";
 import type { CalendarWithUrl } from "@/features/calendar/actions";
 
+
 export const metadata: Metadata = {
   title: "社内カレンダー",
 };
 
 export default async function CalendarPage() {
   // withAuthで認証済みのユーザー情報(ctx)を取得し処理を実行
+  //calendars: 全カレンダー一覧（calendarアプリに渡すためのデータ）
   const calendars = await withAuth(async (ctx) => {
     // getCalendarsでカレンダーレコード一覧を取得
     const records = await getCalendars(ctx);
@@ -25,6 +27,7 @@ export default async function CalendarPage() {
     <main>
       <section className="min-h-screen bg-[#faf9f7] flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-7xl">
+          {/* カレンダーページのタイトル */}
           <h1
             style={{
               fontSize: "1.5rem",
@@ -35,6 +38,7 @@ export default async function CalendarPage() {
           >
             社内カレンダー
           </h1>
+          {/* カレンダーページのコンテンツ */}
           <CalendarApp initialCalendars={calendars} />
         </div>
       </section>

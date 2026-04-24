@@ -8,30 +8,46 @@ import FormControl from "@mui/material/FormControl";
 import Button from "@/app/components/elements/Button";
 import CalendarDialog from "@/features/calendar/components/CalendarDialog";
 import {
-  fetchCalendarsAction,
-  addCalendarAction,
-  updateCalendarAction,
-  deleteCalendarAction,
-} from "@/features/calendar/actions";
+  fetchCalendarsAction,//カレンダー一覧取得
+  addCalendarAction,//カレンダー新規追加
+  updateCalendarAction,//カレンダー更新
+  deleteCalendarAction,//カレンダー削除
+} from "@/features/calendar/actions";//server actions カレンダー一覧取得、新規追加、更新、削除
 import type { CalendarWithUrl } from "@/features/calendar/actions";
 
+//Props型: コンポーネントが受け取るプロパティの型定義
 type Props = {
-  initialCalendars: CalendarWithUrl[];
+  initialCalendars: CalendarWithUrl[];//初期カレンダー一覧
 };
 
 export default function CalendarApp({ initialCalendars }: Props) {
+  // カレンダー一覧の状態を管理するstate。初期値はpropsで受け取ったinitialCalendars（最新カレンダー）
   const [calendars, setCalendars] = useState<CalendarWithUrl[]>(initialCalendars);
+
+  // 選択中の年を保持するstate。初期値は初期カレンダー一覧があれば最初の年、なければ空文字("")
   const [selectedYear, setSelectedYear] = useState<number | "">(
     initialCalendars.length > 0 ? initialCalendars[0].year : ""
   );
+
+  // カレンダー追加/編集ダイアログの開閉状態を管理。falseで非表示、trueで表示
   const [modalOpen, setModalOpen] = useState(false);
+
+  // ダイアログのモード（新規追加 or 編集）を管理。"new"なら新規、"edit"なら編集
   const [modalMode, setModalMode] = useState<"new" | "edit">("new");
+
+  // エラーメッセージ表示用state。エラー発生時に内容をセット
   const [errorMessage, setErrorMessage] = useState("");
 
+  // 直前に受け取ったinitialCalendarsを保持し、propsの変更を検知してstateを更新するためのstate
   const [prevInitial, setPrevInitial] = useState(initialCalendars);
+
+  // propsのinitialCalendarsが更新された場合に、各stateも同期させる
   if (prevInitial !== initialCalendars) {
+    // prevInitialを新しいinitialCalendarsで上書き
     setPrevInitial(initialCalendars);
+    // calendarsも新しいinitialCalendarsと同期
     setCalendars(initialCalendars);
+    // 選択中の年も、新しいリストの先頭（あれば）に合わせる
     if (initialCalendars.length > 0) {
       setSelectedYear(initialCalendars[0].year);
     }
@@ -138,7 +154,7 @@ export default function CalendarApp({ initialCalendars }: Props) {
             新規追加
           </Button>
           {/* 編集ボタン */}
-          {currentCalendar && (
+          {currentCalendar && (/* カレンダーデータが既に登録されている場合は、編集ボタンを表示 */
             <Button onClick={() => { setModalMode("edit"); setModalOpen(true); }}>
               編集
             </Button>
@@ -208,6 +224,7 @@ export default function CalendarApp({ initialCalendars }: Props) {
         onDelete={handleDelete}
         current={modalMode === "edit" ? currentCalendar : null}
         existingYears={calendars.map((c) => c.year)}
+        existingTitles={calendars.map((c) => c.title)}
       />
     </div>
   );
