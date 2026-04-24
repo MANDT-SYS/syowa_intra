@@ -32,7 +32,7 @@
   text-align: center; /* テキスト中央揃え */
   padding: 1.5rem 1.25rem 1.25rem; /* 内側余白（上,左右,下） */
   border-radius: 12px; /* 角丸 */
-  min-height: 260px; /* 最低高さ */
+  min-height: 220px; /* 最低高さ */
 }
 
 /* 背景バリエーション：ピンク */
@@ -76,14 +76,16 @@
   font-size: 0.8125rem;
   line-height: 1.65;
   color: #1a1a1a;
-  margin: 0;
-  flex: 1 1 auto; /* 可変長：下部のアクションを一番下に寄せる */
+  /* ボタンとの余白を狭めるため下マージンを追加 */
+  margin: 0 0 0.5rem 0; 
+   /* 可変長：下部のアクションを一番下に寄せる */
+  /* flex: 1 1 auto; */
 }
 
 /* ボタンなどアクション部分 */
 .actions {
-  margin-top: auto; /* 下寄せ */
-  padding-top: 1.25rem; /* 上余白 */
+  margin-top: 0; /* 下寄せを解除し、説明文との余白を狭める */
+  padding-top: 0.5rem; /* 上余白も減らす */
 }
 
 /* ボタン内の矢印装飾 */

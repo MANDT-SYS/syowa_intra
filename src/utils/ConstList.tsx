@@ -44,6 +44,9 @@ export const ConstList = {
   BUSYO_SUMITOMO: 15,
   BUSYO_BIB: 9, // 半導体テストBUの部署ID
 
+  //色
+  RED_COLOR: '#86171F',
+  ORANGE_COLOR: '#D88C1F',
 
   // DataGridに使用しているスタイル
   DATA_GRID_STYLES: {

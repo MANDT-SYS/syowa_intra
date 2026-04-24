@@ -19,17 +19,20 @@ type Props = {
   onDelete: () => Promise<void>; // 削除ボタン押下時に呼ばれる非同期関数
   current: CalendarWithUrl | null; // 編集対象カレンダー情報。新規の場合はnull
   existingYears: number[]; // 既存のカレンダー年リスト（重複チェック用）
+  existingTitles: string[]; // 既存のカレンダータイトルリスト（重複チェック用）
 };
 
 // CalendarEditModalコンポーネント本体
-export default function CalendarEditModal({
+export default function CalendarDialog({
   open,         // ダイアログの開閉状態
   onClose,      // ダイアログを閉じるコールバック
   onSave,       // 保存処理コールバック
   onDelete,     // 削除処理コールバック
   current,      // 編集中カレンダー or 新規（null）
-  existingYears // 既存カレンダー年リスト
+  existingYears, // 既存カレンダー年リスト
+  existingTitles // 既存カレンダータイトルリスト
 }: Props) {
+  //新規の場合はtrue、編集の場合はfalse
   const isNew = !current;
 
   // 年（year）の状態を管理。currentがあればその年、なければ現在の年を初期値とする
@@ -55,18 +58,22 @@ export default function CalendarEditModal({
   const handleSave = async () => {
     setErrorMessage("");
 
+    //タイトルが空の場合はエラー
     if (!title.trim()) {
       setErrorMessage("タイトルを入力してください。");
       return;
     }
 
+    //新規の場合で、PDFファイルを選択していない場合はエラー
     if (isNew && !file) {
       setErrorMessage("PDFファイルを選択してください。");
       return;
     }
 
-    if (isNew && existingYears.includes(year)) {
-      setErrorMessage(`${year}年のカレンダーは既に登録されています。`);
+    //新規・編集の場合で、既存のカレンダー年リストに年が含まれている場合はエラー
+    if (existingYears.includes(year) && existingTitles.includes(title)) {
+      console.log(existingYears);
+      setErrorMessage(`${year}年「${title}」のカレンダーは既に登録されています。`);
       return;
     }
 
@@ -81,6 +88,8 @@ export default function CalendarEditModal({
       if (file) {
         formData.append("file", file);
       }
+      console.log(formData);
+      
       await onSave(formData);
       onClose();
     } catch (e) {
@@ -122,6 +131,8 @@ export default function CalendarEditModal({
       fullWidth
       TransitionProps={{ onEnter: handleOpen }}
     >
+      {/* ダイアログタイトル */}
+      {/* 新規の場合は ’カレンダー新規追加’ 、編集の場合は ’カレンダー編集’ を表示 */}
       <DialogTitle>{isNew ? "カレンダー新規追加" : `${current.year}年 カレンダー編集`}</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}>
         <TextField

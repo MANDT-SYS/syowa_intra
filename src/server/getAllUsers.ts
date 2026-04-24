@@ -1,11 +1,10 @@
 import "server-only";
 import { supabase } from "@/lib/supabase";
-// ログインユーザー一覧取得（論理削除されていないもの）
-export async function getLoginUser(sub: string) {
+// 全ユーザー一覧取得（論理削除されていないもの）
+export async function getAllUsers() {
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('auth_user_id', sub)
       .is('deleted_at', null);
   
     if (error) throw error;

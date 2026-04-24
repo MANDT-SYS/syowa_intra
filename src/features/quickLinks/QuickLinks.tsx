@@ -26,7 +26,7 @@ type QuickLinksProps = {
 };
 
 const DEFAULT_DESCRIPTION =
-  "説明が入ります。";
+  "";
 
 export function QuickLinks({ items }: QuickLinksProps) {
   return (
@@ -40,18 +40,31 @@ export function QuickLinks({ items }: QuickLinksProps) {
           >
             <div className={styles.iconPlaceholder} aria-hidden />
             <h3 className={styles.title}>{item.title}</h3>
-            <p className={styles.description}>
+            {/* ↓説明文とボタンのスペースを狭めるため、pタグのmargin-bottomを0に、actionsにmargin-topを少しだけ */}
+            <p
+              className={styles.description}
+              style={{
+                marginBottom: "0.3rem",
+              }}
+            >
               {item.description ?? DEFAULT_DESCRIPTION}
             </p>
-            <div className={styles.actions}>
+            <div
+              className={styles.actions}
+              style={{
+                marginTop: "0.3rem",
+                paddingTop: "0.2rem",
+              }}
+            >
               <Button
                 type="button"
-                onClick={() => window.location.href = item.href}
+                onClick={() => (window.location.href = item.href)}
                 sx={{ textTransform: "none" }}
                 style={{
-                  padding: "10px 16px",
+                  padding: "8px 12px",
                   border: "none",
                   borderRadius: "8px",
+                  minWidth: 0,
                 }}
               >
                 移動
@@ -59,7 +72,6 @@ export function QuickLinks({ items }: QuickLinksProps) {
                   &gt;
                 </span>
               </Button>
-         
             </div>
           </article>
         );

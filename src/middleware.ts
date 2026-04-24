@@ -14,6 +14,8 @@ import { auth0 } from "./lib/auth0";
 // アクセスを許可するIPアドレスリスト（ここでは社内ネットワークのグローバルIPを指定）
 const ALLOWED_IPS = [
   "153.156.22.153",  // 社内ネットワークのグローバルIP
+  "182.168.181.143",
+
 ];
 
 // IPv4アドレス（例: 153.156.22.153）を32bitの数値に変換する関数
@@ -51,25 +53,17 @@ export async function middleware(request: NextRequest) {
   const isDev = process.env.NODE_ENV === "development";
 
   const ip =
-  request.headers.get("x-real-ip") ??
-  request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-  "";
+    request.headers.get("x-real-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "";
 
- // Vercelのログに出力される
- console.log("=== Access attempt ===");
- console.log("IP:", ip);
- console.log("Path:", request.nextUrl.pathname);
+  if (!isDev) {
+    if (!ip || !isAllowed(ip)) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
+  }
 
-
-
- if (!isDev) {
- if (!ip || !isAllowed(ip)) {
-   return new NextResponse("Forbidden", { status: 403 });
- }
-}
-
-
-   // Auth0 がリダイレクト（ログイン画面への誘導,、認証エラー等）を返した場合は
+  // Auth0 がリダイレクト（ログイン画面への誘導,、認証エラー等）を返した場合は
   // CSP を付けずにそのまま返す
   //リダイレクトのレスポンスには HTML のボディがない（あっても表示されない）ので、スクリプトが実行される余地がない。
   // CSP は「ブラウザがHTMLを描画するとき」に効くものなので、リダイレクトに CSP を付けても意味がない。
@@ -84,7 +78,6 @@ export async function middleware(request: NextRequest) {
 
   // セキュリティ対策（XSSの保険）：リクエストの度に、middleware内でscript-srcで使うランダムなnonceを生成
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-
 
   // Content-Security-Policyヘッダ生成（各行詳細はコメント参照）
   const csp = [
@@ -160,5 +153,3 @@ export const config = {
     },
   ],
 };
-
-

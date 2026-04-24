@@ -5,7 +5,7 @@ import { getAllUsers } from "@/server/getAllUsers";
 import DataGrid from '@/app/components/elements/DataGrid';
 
 
-export default async function Document() {
+export default async function Management() {
 
 // セッションがある場合
   //初期レンダリング用の全ユーザーデータ取得
@@ -20,9 +20,8 @@ export default async function Document() {
            <section className="min-h-screen bg-[#faf9f7] flex flex-col items-center px-4 py-8">
            <div className="w-full max-w-7xl">
             <h1 >
-              これは書類管理画面です。
+              これは管理画面です。
             </h1>
-            <DataGrid />
           </div>
      
         <footer className="mt-16 text-sm text-[#9a948c]">

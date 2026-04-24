@@ -1,8 +1,10 @@
+//TODO
 export interface Todo {
     id: number//TODOID
     title: string//TODOタイトル
 }
 
+//カレンダー
 export interface CalendarRecord {
     id: string//カレンダーID
     year: number//年
@@ -35,6 +37,7 @@ export type HeaderMenuItem = {
     division_id: number;//部門ID
   };
 
+  //認証コンテキスト
   export type AuthContext = {
     sub: string;//id
     user: UserInfo;//ユーザー情報
