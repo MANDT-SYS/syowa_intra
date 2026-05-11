@@ -3,10 +3,10 @@
 import { useState, useEffect, useTransition } from "react";
 import { addTodoAction, deleteTodoAction } from "@/features/todo/actions";
 import TodoList from "@/features/todo/components/TodoList";
-import Button from "@/app/components/elements/Button";
+import Button from "@/components/elements/Button";
 import { Todo } from "@/types/interface";
 import { useRouter } from "next/navigation";
-import TextInput from "@/app/components/elements/TextInput";
+import TextInput from "@/components/elements/TextInput";
 
 //page.tsxからpropsでinitialTodosを受け取る
 type Props = {

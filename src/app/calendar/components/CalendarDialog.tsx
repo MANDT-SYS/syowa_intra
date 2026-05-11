@@ -7,9 +7,9 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
-import Button from "@/app/components/elements/Button";
+import Button from "@/components/elements/Button";
 import MuiButton from "@mui/material/Button";
-import type { CalendarWithUrl } from "@/features/calendar/actions";
+import type { CalendarWithUrl } from "@/app/calendar/actions";
 
 // Props型: コンポーネントが受け取るプロパティの型定義
 type Props = {

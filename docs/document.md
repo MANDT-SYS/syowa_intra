@@ -2,11 +2,6 @@
 # 書類管理機能概要・ルール
     DBテーブル
     下記のように作成。
-        -- ============================================================
-        -- 前提: usersテーブルが既に存在すること
-        -- users.user_id (int8 = BIGINT) を各テーブルから外部キーで参照する
-        -- ============================================================
-
 
         -- ============================================================
         -- document_categories（書類カテゴリーマスタテーブル）
@@ -27,14 +22,14 @@
             -- カテゴリーの登録日時
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-            -- カテゴリーの登録者（usersテーブルのuser_id）
-            created_by BIGINT NOT NULL REFERENCES users(user_id),
+            -- カテゴリーの登録者（user_id）
+            created_by BIGINT NOT NULL,
 
             -- 論理削除日時（NULLなら有効、値があれば無効化済み）
             deleted_at TIMESTAMPTZ,
 
-            -- 論理削除実行者（usersテーブルのuser_id）
-            deleted_by BIGINT REFERENCES users(user_id)
+            -- 論理削除実行者（user_id）
+            created_by BIGINT
         );
 
         -- テーブルコメント
@@ -45,16 +40,16 @@
         COMMENT ON COLUMN document_categories.name IS 'カテゴリー名（ユニーク制約あり）';
         COMMENT ON COLUMN document_categories.display_order IS 'セレクトボックスでの表示順（昇順）';
         COMMENT ON COLUMN document_categories.created_at IS '登録日時';
-        COMMENT ON COLUMN document_categories.created_by IS '登録者（FK → users.user_id）';
+        COMMENT ON COLUMN document_categories.created_by IS '登録者（user_id）';
         COMMENT ON COLUMN document_categories.deleted_at IS '論理削除日時（NULLなら有効）';
-        COMMENT ON COLUMN document_categories.deleted_by IS '論理削除実行者（FK → users.user_id）';
+        COMMENT ON COLUMN document_categories.deleted_by IS '論理削除実行者（user_id）';
 
         -- 初期データ投入
-        -- ※ created_by にはシステム管理者のusers.user_idを指定してください
+        -- ※ created_by にはシステム管理者のuser_id:0(bigInt)を指定してください
         -- INSERT INTO document_categories (name, display_order, created_by) VALUES
-        --     ('規程',       1, {管理者のusers.user_id}),
-        --     ('申請書',     2, {管理者のusers.user_id}),
-        --     ('マニュアル', 3, {管理者のusers.user_id});
+        --     ('規程',       1, {管理者のuser_id}),
+        --     ('申請書',     2, {管理者のuser_id}),
+        --     ('マニュアル', 3, {管理者のuser_id});
 
 
         -- ============================================================
@@ -85,14 +80,14 @@
             -- ドキュメントの初回登録日時（自動設定）
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-            -- ドキュメントの初回登録者（usersテーブルのuser_id）
-            created_by BIGINT NOT NULL REFERENCES users(user_id),
+            -- ドキュメントの初回登録者（user_id）
+            created_by BIGINT NOT NULL,
 
             -- 論理削除日時（NULLなら未削除、値があれば削除済み）
             deleted_at TIMESTAMPTZ,
 
-            -- 論理削除を実行したユーザー（usersテーブルのuser_id）
-            deleted_by BIGINT REFERENCES users(user_id)
+            -- 論理削除を実行したユーザー（user_id）
+            deleted_by BIGINT
         );
 
         -- テーブルコメント
@@ -105,9 +100,9 @@
         COMMENT ON COLUMN documents.department IS '管轄部署名';
         COMMENT ON COLUMN documents.current_revision_id IS '最新版のrevision ID。一覧表示に使用';
         COMMENT ON COLUMN documents.created_at IS '初回登録日時';
-        COMMENT ON COLUMN documents.created_by IS '初回登録者（FK → users.user_id）';
+        COMMENT ON COLUMN documents.created_by IS '初回登録者（user_id）';
         COMMENT ON COLUMN documents.deleted_at IS '論理削除日時（NULLなら有効）';
-        COMMENT ON COLUMN documents.deleted_by IS '論理削除実行者（FK → users.user_id）';
+        COMMENT ON COLUMN documents.deleted_by IS '論理削除実行者（user_id）';
 
 
         -- ============================================================
@@ -151,14 +146,14 @@
             -- この版の登録日時 = 改版日時（自動設定）
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-            -- この版の登録者 = 改版者（usersテーブルのuser_id）
-            created_by BIGINT NOT NULL REFERENCES users(user_id),
+            -- この版の登録者 = 改版者（user_id）
+            created_by BIGINT NOT NULL,
 
             -- 版単位の論理削除日時（通常はdocument単位で削除するが、個別版の削除にも対応）
             deleted_at TIMESTAMPTZ,
 
-            -- 版単位の論理削除実行者（usersテーブルのuser_id）
-            deleted_by BIGINT REFERENCES users(user_id),
+            -- 版単位の論理削除実行者（user_id）
+            deleted_by BIGINT REFERENCES ,
 
             -- 同一ドキュメント内で版番号が重複しないようにする制約
             CONSTRAINT uq_document_revision UNIQUE (document_id, revision_number)
@@ -177,9 +172,9 @@
         COMMENT ON COLUMN revisions.file_size IS 'ファイルサイズ（バイト）';
         COMMENT ON COLUMN revisions.notes IS '改版メモ・変更理由（初版はNULL可）';
         COMMENT ON COLUMN revisions.created_at IS 'この版の登録日時（= 改版日時）';
-        COMMENT ON COLUMN revisions.created_by IS 'この版の登録者（FK → users.user_id）';
+        COMMENT ON COLUMN revisions.created_by IS 'この版の登録者（user_id）';
         COMMENT ON COLUMN revisions.deleted_at IS '版単位の論理削除日時（NULLなら有効）';
-        COMMENT ON COLUMN revisions.deleted_by IS '版単位の論理削除実行者（FK → users.user_id）';
+        COMMENT ON COLUMN revisions.deleted_by IS '版単位の論理削除実行者（user_id）';
 
 
         -- ============================================================
@@ -237,12 +232,14 @@
     - バケット名: `documents`
 
     ## 画面レイアウト
-    　添付画像を参考にお願い。
+    　大体のイメージは添付画像を参考にお願い。
+    色が青のところは'#86171F'に変更して。
+  
 
-    ## 表示機能
-    - ページ遷移時にdocumentsテーブルの全レコードを取得する
-    - 新規追加ボタンを配置。
-    - 取得したデータをDataGridProの中に入れる。（新規追加ボタンの下に配置）
+    ## 1.書類リスト表示画面
+    - ページ遷移時にdocumentsテーブルの全データを取得する（削除済みデータは除く）
+    - 取得したデータをリスト表の中に入れる。（新規追加ボタンの下に配置）
+    　※１番新しい版のデータを入れる。
       - カラムは
       　・詳細ボタン
       　・ダウンロードボタン
@@ -255,57 +252,48 @@
         ・登録者名（app/document/page.tsx内で取得したallUsersとdocumentテーブル内created_byと同じもののユーザー名を表示
         　（比較の際は一応ナンバー型に変換してから行う。））
         ・改版者名
+    - リスト表の上に検索、フィルター、新規追加ボタンを配置。
 
     
-    ## 新規追加ボタンクリック機能
+    ## 2.新規追加ボタンクリック機能
     - 新規追加ボタンをクリックしたら登録ダイアログを表示。
-    　ファイルの選択、メタデータの入力。
+    　書類名、書類の説明の入力、カテゴリの選択等、ファイルの選択（ドラッグアンドドロップ）、メタデータの入力。
     　保存を押すと登録。
         
-    ## 詳細ボタンクリック機能
-    - 詳細ボタンをクリックしたらページ遷移。（app routerの動的ルーティング）
-        /documents              ← 一覧ページ（DataGridPro）
+    ## 3.詳細ボタンクリック機能
+    - 書類リスト表示画面リストの各行に存在する詳細ボタンをクリックしたらページ遷移。（app routerの動的ルーティング）
+        /documents              ← リスト表ページ
         /documents/[id]         ← 詳細ページ
     
         詳細ページでは下記を表示
         ・ファイルのプレビュー
         ・メタ情報
-        ・過去版の履歴
+        ・改版履歴（日付、改版者）
         ・ダウンロードボタン（一覧にもあるが、プレビューを見て確認してからダウンロードしたい場合、詳細画面にもあった方が親切。）
+        　配置場所はプレビューの上
         ・改版ボタン
         ・修正ボタン
-        ・削除ボタン
 
-        改版ボタン、修正ボタン、削除ボタン はクリックするとダイアログを表示させる。
+        改版ボタン、修正ボタン はクリックするとダイアログを表示させる。
 
         改版ダイアログ：一番下にキャンセル・改版の二つのボタンを配置。
-        　　　　　　　　内容が改定・更新された新ファイルを、revision_number を上げて追加する。
+        　　　　　　　　内容が改定・更新されたデータや新しくドラッグアンドドロップされたファイルを、revision_number を上げて追加する。
+        　　　　　　　　※改版の際、ドラッグアンドドロップされたファイルが無ければ、同じファイルを引き続き使用。
         　　　　　　　　旧版は履歴として残る。
+        　　　　　　　　改版ボタンをクリックするとダイアログが閉じ、改版したデータが表示される。
+    　　　　　　　　　　キャンセルはクリックでダイアログ閉じる。
         
-        修正ダイアログ：一番下にキャンセル・修正の二つのボタンを配置。
-        　　　　　　　　同じ版のデータを上書き更新する。
-        　　　　　　　　タイトルの誤字を直したり、カテゴリーを変更したり、ファイルを差し替えたりする。
+        修正ダイアログ：一番下にキャンセル・修正、削除の3つのボタンを配置。
+        　　　　　　　　タイトルの誤字を直したり、カテゴリーを変更したり、ファイルを差し替えたり等、メタデータの編集。
         　　　　　　　　revision_number は変わらない。
+        　　　　　　　　修正ボタンをクリックするとダイアログが閉じ、変更データが反映される。
+        　　　　　　　　削除ボタンはクリックしたら
+        　　　　　　　　　　・本当に削除して良いか？
+        　　　　　　　　　　・もし改版履歴あれば、改版の履歴があるデータだけど良いか？
+        　　　　　　　　の確認を行わせ、OKが押されたら、
+        　　　　　　　　documents（書類本体テーブル）、revisions（版テーブル）のデータを論理削除
+　　　　　　　　　　　　キャンセルはクリックでダイアログ閉じる。
 
-        削除ダイアログ：一番下にキャンセル・削除の二つのボタンを配置。
-        　　　　　　　　削除してよいかの確認し、削除が押されたら削除（論理削除）
-
-
-    - 
-    - 
-    - セレクトボックスの値を変更したら、表示をその年のデータに切り替える（再fetchは不要、初回取得データから参照）
-    - PDFのURLはstorage_pathからSupabase Storageの公開URL or Signed URLを生成して使用する
-
-    ## 編集機能（モーダルダイアログ）
-    - 編集ボタン押下でダイアログを開く
-    - ダイアログには以下のフィールドを表示する:
-        - 年（数値入力 / 既存データの場合は変更不可）
-        - タイトル（テキスト入力）
-        - PDFファイル（ファイル選択、差し替え時のみ選択）
-        - キャンセル、保存ボタンを設置
-    - 操作:
-        - 新規追加: 年・タイトル・PDFをすべて入力して保存
-        - 既存編集: セレクトボックスで選択中の年のデータを編集
-        - 削除: 選択中の年のデータを削除（確認ダイアログを挟む）
-    - 保存後はデータを再取得してセレクトボックスとPDF表示を更新する
-    - 年の重複は不可（unique制約によりDBレベルで弾く + フロントでもバリデーション）
+    ## 備考
+    版を一つ前に戻したり、過去版の閲覧、ダウンロード等は今のところ必要ないと先方から言われているため一旦実装しないが、今後追加する可能性はある。
+        

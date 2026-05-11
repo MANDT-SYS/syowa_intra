@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import {
-  DataGridPro,
+  DataGrid,
   type GridColDef,
   GridToolbar,
-} from "@mui/x-data-grid-pro";
+} from "@mui/x-data-grid";
 import {
   Box,
   Chip,
@@ -14,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 
+// 行データ型の定義（any禁止、型明示）
 type Row = {
   id: number;
   name: string;
@@ -21,6 +22,7 @@ type Row = {
   status: string;
 };
 
+// 列定義（無償版用のGridColDefを使用）
 const columns: GridColDef<Row>[] = [
   {
     field: "id",
@@ -75,6 +77,7 @@ const columns: GridColDef<Row>[] = [
   },
 ];
 
+// 初期データ
 const rows: Row[] = [
   { id: 1, name: "山田 太郎", department: "総務部", status: "在席" },
   { id: 2, name: "佐藤 花子", department: "営業部", status: "外出中" },
@@ -82,6 +85,7 @@ const rows: Row[] = [
   { id: 4, name: "高橋 美咲", department: "管理部", status: "在席" },
 ];
 
+// 「無償版」Mui DataGrid を使ったコンポーネント
 export default function ModernDataGrid() {
   return (
     <Paper
@@ -154,7 +158,7 @@ export default function ModernDataGrid() {
           },
         }}
       >
-        <DataGridPro
+        <DataGrid
           rows={rows}
           columns={columns}
           disableRowSelectionOnClick
@@ -175,7 +179,6 @@ export default function ModernDataGrid() {
             },
           }}
         />
-  
       </Box>
     </Paper>
   );

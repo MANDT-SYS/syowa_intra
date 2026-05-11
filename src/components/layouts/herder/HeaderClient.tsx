@@ -170,8 +170,19 @@ export default function HeaderClient({
         <AppBar
           position="static"
           // color={isDev ? "secondary" : undefined}
-          color={isDev ? "inherit" : undefined}
-          sx={!isDev ? { backgroundColor: ConstList.RED_COLOR } : undefined}
+           color={isDev ? "inherit" : undefined}
+           //sx={!isDev ? { backgroundColor: ConstList.RED_COLOR } : undefined}
+           //ヘッダーバーの色を左を白、右を昭和レッドにグラデーションする
+           sx={{
+            // グラデーションの境界を左60%で白→以降赤にする
+            // オレンジ(#D88C1F)と赤(#86171F)の境界をぼかしてなめらかに調整
+            //background: "linear-gradient(to right, white 54%, #FFD396 60%, #D88C1F 72%, #A13825 85%, #86171F 96%)",
+    
+       
+            //background: "linear-gradient(to right, white 60%, #86171F 90%)",
+           }}
+   
+   
         >
           {/* ツールバーの高さを高くする minHeight: { xs: 80, sm: 96 } */}
           <Toolbar sx={{ minHeight: { xs: 80, sm: 96 } }}>
@@ -179,9 +190,9 @@ export default function HeaderClient({
             <IconButton
               size={isMobile ? "small" : "large"}
               edge="start"
-              color="inherit"
+              sx={{ color: "#86171F" }}
               aria-label="menu"
-              sx={{ mr: 1 }}
+              
               onClick={() => setDrawerOpen(true)}
             >
               <MenuIcon />
@@ -231,11 +242,27 @@ export default function HeaderClient({
 
             {/* ローカルの場合、ローカルモードと表示 */}
               {isDev && (
-                <Typography variant="body2" sx={{ ml: 1 }}>
+                <Typography variant="body2" sx={{ ml: 1, color: "#86171F" }}>
                   ローカルモード
                 </Typography>
+           
               )}
             </Box>
+
+           
+        {/* ヘッダーナビゲーション */}
+        {/* <div className="mx-auto max-w-6xl px-6 md:px-10 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3">
+          </Link>
+          <nav className="hidden md:flex items-center gap-8 text-[19px] text-[#5F5E5A]">
+            <Link href="/"         className="text-[#6B7B5A] font-medium">ホーム</Link>
+            <Link href="/members"  className="hover:text-[#2C2C2A]">社員情報</Link>
+            <Link href="/forms"    className="hover:text-[#2C2C2A]">申請・手続き</Link>
+            <Link href="/docs"     className="hover:text-[#2C2C2A]">お知らせ</Link>
+            <Link href="/search"   className="hover:text-[#2C2C2A]">従業員検索</Link>
+          </nav>
+        </div> */}
+     
 
             {/* ログインユーザー・マイページボタン */}
             <IconButton

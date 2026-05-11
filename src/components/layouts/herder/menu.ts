@@ -7,7 +7,7 @@ import { ConstList } from "@/utils/ConstList";
   
     //メニュー項目を作成
     //開発者権限の場合
-    if (user.accountancy_authority_id === ConstList.DEVELORER_AUTHORITY) {
+    if (user.accountancyAuthorityId === ConstList.DEVELORER_AUTHORITY) {
       return [
         { label: "ホーム", href: "/home", iconKey: "home" },
         { label: "マイページ", href: "/my_page", iconKey: "account" },

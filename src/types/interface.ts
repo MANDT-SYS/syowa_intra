@@ -29,12 +29,12 @@ export type HeaderMenuItem = {
   
   //ユーザー情報
   export type UserInfo = {
-    user_id: number;//ユーザーID
-    family_name: string;//姓
-    given_name: string;//名
-    accountancy_authority_id: number;//権限ID
-    employment_status_id: number;//雇用形態ID
-    division_id: number;//部門ID
+    userId: number;//ユーザーID
+    familyName: string;//姓
+    givenName: string;//名
+    accountancyAuthorityId: number;//権限ID
+    employmentStatusId: number;//雇用形態ID
+    divisionId: number;//部門ID
   };
 
   //認証コンテキスト
