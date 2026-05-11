@@ -38,7 +38,7 @@ export const deleteTodoAction = async (
 ): Promise<DeleteTodoResult> => {
   return withAuth(async (ctx) => {
     if (
-      Number(ctx.user.accountancy_authority_id) === ConstList.NORMAL_AUTHORITY
+      Number(ctx.user.accountancyAuthorityId) === ConstList.NORMAL_AUTHORITY
     ) {
       return { success: false, error: "権限がありません。" };
     }

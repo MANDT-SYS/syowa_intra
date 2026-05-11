@@ -1,19 +1,19 @@
 import { auth0 } from "@/lib/auth0";
-import Button from '@/app/components/elements/Button';
+import Button from '@/components/elements/Button';
 import { withAuth } from "@/lib/withAuth";
-import { getAllUsers } from "@/server/getAllUsers";
-import DataGrid from '@/app/components/elements/DataGrid';
+//import { getAllUsers } from "@/server/getAllUsers";
+import DataGrid from '@/components/elements/DataGrid';
 
 
 export default async function Management() {
 
 // セッションがある場合
   //初期レンダリング用の全ユーザーデータ取得
-  const allUsers = await withAuth(async (ctx) => {
-    return getAllUsers();
-  });
+  // const allUsers = await withAuth(async (ctx) => {
+  //   return getAllUsers();
+  // });
 
-  console.log(allUsers);
+  // console.log(allUsers);
 
     return (
       <main>

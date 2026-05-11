@@ -1,9 +1,9 @@
 import { Metadata } from "next";
 import { withAuth } from "@/lib/withAuth";
-import { getCalendars } from "@/features/calendar/server/read";
-import { getPdfPublicUrl } from "@/features/calendar/server/write";
-import CalendarApp from "@/features/calendar/components/CalendarApp";
-import type { CalendarWithUrl } from "@/features/calendar/actions";
+import { getCalendars } from "@/app/calendar/server/read";
+import { getPdfPublicUrl } from "@/app/calendar/server/write";
+import CalendarApp from "@/app/calendar/components/CalendarApp";
+import type { CalendarWithUrl } from "@/app/calendar/actions";
 
 
 export const metadata: Metadata = {
@@ -24,8 +24,8 @@ export default async function CalendarPage() {
   });
 
   return (
-    <main>
-      <section className="min-h-screen bg-[#faf9f7] flex flex-col items-center px-4 py-8">
+    <>
+      <section className="min-h-screen  flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-7xl">
           {/* カレンダーページのタイトル */}
           <h1
@@ -36,12 +36,11 @@ export default async function CalendarPage() {
               color: "#333",
             }}
           >
-            社内カレンダー
           </h1>
           {/* カレンダーページのコンテンツ */}
           <CalendarApp initialCalendars={calendars} />
         </div>
       </section>
-    </main>
+    </>
   );
 }

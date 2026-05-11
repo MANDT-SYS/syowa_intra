@@ -5,15 +5,15 @@ import { useState } from "react";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormControl from "@mui/material/FormControl";
-import Button from "@/app/components/elements/Button";
-import CalendarDialog from "@/features/calendar/components/CalendarDialog";
+import Button from "@/components/elements/Button";
+import CalendarDialog from "@/app/calendar/components/CalendarDialog";
 import {
   fetchCalendarsAction,//カレンダー一覧取得
   addCalendarAction,//カレンダー新規追加
   updateCalendarAction,//カレンダー更新
   deleteCalendarAction,//カレンダー削除
-} from "@/features/calendar/actions";//server actions カレンダー一覧取得、新規追加、更新、削除
-import type { CalendarWithUrl } from "@/features/calendar/actions";
+} from "@/app/calendar/actions";//server actions カレンダー一覧取得、新規追加、更新、削除
+import type { CalendarWithUrl } from "@/app/calendar/actions";
 
 //Props型: コンポーネントが受け取るプロパティの型定義
 type Props = {
@@ -132,6 +132,7 @@ export default function CalendarApp({ initialCalendars }: Props) {
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
             displayEmpty
+            sx={{ backgroundColor: "#fff" }} // 背景色を白に設定
           >
             {/* データなしの場合は、デフォルトの ’データなし’ を表示 */}
             {calendars.length === 0 && (
@@ -146,6 +147,7 @@ export default function CalendarApp({ initialCalendars }: Props) {
               </MenuItem>
             ))}
           </Select>
+     
         </FormControl>
 
         <div style={{ display: "flex", gap: 8 }}>

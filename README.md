@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+これは、[`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app) で作成された
+ [Next.js](https://nextjs.org) プロジェクトです。
 
-## Getting Started
-
-First, run the development server:
+## はじめに
+開発用サーバーを起動します。:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
+[http://localhost:3000](http://localhost:3000) をブラウザで開くと、結果を確認できます。
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ページの編集は `app/page.tsx` を修正することで始められます。ページは編集するたびに自動で更新されます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+このプロジェクトでは [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) を利用し、[Geist](https://vercel.com/font) フォントファミリーを自動的に最適化・読み込みしています。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 詳細情報
+Next.jsについてさらに知りたい場合は、以下のリソースをご覧ください。
 
-## Learn More
+- [Next.js Documentation](https://nextjs.org/docs) - Next.jsの機能やAPIについて解説しています。
+- [Learn Next.js](https://nextjs.org/learn) - インタラクティブなNext.jsのチュートリアルです。
 
-To learn more about Next.js, take a look at the following resources:
+[the Next.js GitHub repository](https://github.com/vercel/next.js) でソースコードやフィードバック、コントリビュートも可能です！
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Vercelへのデプロイ
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+最も簡単にNext.jsアプリをデプロイする方法は、Next.js開発元が提供している [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) を利用することです。
 
-## Deploy on Vercel
+より詳しい手順については [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) をご確認ください。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# プロジェクト概要
+- Next.js (App Router) + TypeScript のWebアプリ
+- ホスティング: Vercel
+- DB: Supabase
+- Storage:Supabase
+- 認証: Auth0
+
+# 技術スタック
+- Next.js 14+ (App Router)
+- TypeScript
+- Supabase (@supabase/supabase-js)
+- githubと連携
+- githubにプッシュすることで自動でVercel にデプロイ
+
+# コーディング規約
+- 言語は TypeScript。any 禁止、型を明示する
+- コンポーネントはすべて関数コンポーネント + named export
+- `"use client"` は必要な場合のみ付与。デフォルトは Server Component
+- データの登録や変更、削除、取得の際の認証は`lib/withAuth.ts`のwithAuthを通す。
+
+# ディレクトリ構成
+- `src/` ディレクトリ配下に、アプリの全てのソースコード・ロジック・ページ・コンポーネントを格納する。
+  - `app/`: Next.js App Router の各ページ（ルーティングごとにディレクトリを分割）
+    - 機能ごと（例: calendar, document, my_page）にディレクトリを作成し、その中に
+    `page.tsx`（画面本体）
+    `components/`（その機能専用のUI部品）
+    `server/`（DB呼び出しなどのサーバーサイドロジック）
+    `actions.ts`（サーバーアクションやエンドポイント）
+    等を必要に応じて配置する。
+    - 例:  
+      - `calendar/`
+        - `page.tsx` : ページ本体
+        - `components/CalendarApp.tsx` : calendarコンポーネント
+        - `components/CalendarDialog.tsx` : calendar登録・更新ダイアログコンポーネント
+        - `server/read.ts` : 読込処理
+        - `server/write.ts` : 登録・更新処理
+        - `actions.ts` : サーバーアクション
+  - `components/`: 全体で共通利用する汎用UIコンポーネント（例: Button, DataGrid など）
+  - `lib/`: SupabaseやAuth0などの外部サービス連携・ユーティリティ・認証処理やAPIクライアント
+  - `types/`: 型定義（TypeScriptのインターフェイスや型エイリアス）
+
+# Supabase ルール
+- クライアント生成は `lib/supabase.ts`
+- クエリビルダーで記述
+
+# エラーハンドリング
+- Supabase の呼び出しは `{ data, error }` を必ずチェック
+- ユーザー向けエラーは日本語で表示
+
+# レスポンス言語
+- コード中のコメントは日本語
+- 説明・回答も日本語で行う
+
+# その他
+- ユーザー取得は上田さんAPIを使用して経理サーバーのpostgresから取得

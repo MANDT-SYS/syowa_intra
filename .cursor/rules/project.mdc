@@ -25,7 +25,29 @@ alwaysApply: true
 - データの登録や変更、削除、取得の際の認証は`lib/withAuth.ts`のwithAuthを通す。
 
 # ディレクトリ構成
-- 機能はfeaturesに作成していく。todoディレクトリ内の構造を参考に。
+- `src/` ディレクトリ配下に、アプリの全てのソースコード・ロジック・ページ・コンポーネントを格納する。
+  - `app/`: Next.js App Router の各ページ（ルーティングごとにディレクトリを分割）
+    - 機能ごと（例: calendar, document, my_page）にディレクトリを作成し、その中に
+    `page.tsx`（画面本体）
+    `components/`（その機能専用のUI部品）
+    `server/`（DB呼び出しなどのサーバーサイドロジック）
+    `actions.ts`（サーバーアクションやエンドポイント）
+    等を必要に応じて配置する。
+    - 例:  
+      - `calendar/`
+        - `page.tsx` : ページ本体
+        - `components/CalendarApp.tsx` : calendarコンポーネント
+        - `components/CalendarDialog.tsx` : calendar登録・更新ダイアログコンポーネント
+        - `server/read.ts` : 読込処理
+        - `server/write.ts` : 登録・更新処理
+        - `actions.ts` : サーバーアクション
+  - `components/`: 全体で共通利用する汎用UIコンポーネント（例: Button, DataGrid など）
+  - `server/`: 全体共通のサーバーロジックやAPI、ユーティリティを配置（複数機能で使うもの）
+  - `lib/`: SupabaseやAuth0などの外部サービス連携・認証処理やAPIクライアント
+  - `types/`: 型定義（TypeScriptのインターフェイスや型エイリアス）
+
+
+- 機能追加時は、`calendar`ディレクトリ内の構造を参考に、ページディレクトリ・components・server・actions等を機能ごとに分割し、責任ごとにファイルを配置すること。
 
 # Supabase ルール
 - クライアント生成は `lib/supabase.ts`
@@ -38,6 +60,9 @@ alwaysApply: true
 # レスポンス言語
 - コード中のコメントは日本語
 - 説明・回答も日本語で行う
+
+# その他
+- ユーザー取得は上田さんAPIを使用して経理サーバーのpostgresから取得
 
 
 

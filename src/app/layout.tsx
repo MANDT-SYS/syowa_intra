@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
-import HeaderServer from "@/app/components/layouts/herder/HeaderServer";
+import HeaderServer from "@/components/layouts/herder/HeaderServer";
 import "./globals.css";
-import MuiXLicense from "@/app/components/elements/MuiXLicense";
+import MuiXLicense from "@/components/elements/MuiXLicense";
 
 // Googleフォント「Geist Sans」と「Geist Mono」をNext.jsに読み込むための設定。
 // それぞれフォント変数を設定して、latinサブセットを指定している。
@@ -44,7 +44,9 @@ export default async function RootLayout({
         <AppRouterCacheProvider options={{ nonce }}>
           <MuiXLicense />
           <HeaderServer />
-          {children}
+          <main className="min-h-screen bg-[#FAF6EF] text-[#2C2C2A] antialiased">
+            {children}
+          </main>
         </AppRouterCacheProvider>
       </body>
     </html>

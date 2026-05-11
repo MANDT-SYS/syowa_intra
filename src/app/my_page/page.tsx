@@ -1,9 +1,9 @@
 import { auth0 } from "@/lib/auth0";
-import Button from '@/app/components/elements/Button';
+import Button from '@/components/elements/Button';
 
 export default async function About() {
   return (
-    <main>
+    <>
       
       {/* <Image src="/サンプル.png" alt="sample" width={150} height={150} /> */}
     
@@ -16,9 +16,6 @@ export default async function About() {
           </h1>
          
         </div>
-
-       
-        
       </main>
 
       <footer className="mt-16 text-sm text-[#9a948c]">
@@ -27,7 +24,7 @@ export default async function About() {
     </section>
 
       
-    </main>
+    </>
   );
 }
 

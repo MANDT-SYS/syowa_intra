@@ -109,8 +109,8 @@ export async function middleware(request: NextRequest) {
     "form-action 'self'",
     // ⑨ フレーム埋込禁止：クリックジャッキング等への対策
     "frame-ancestors 'none'",
-    // ⑩ API通信等：接続先制限
-    "connect-src 'self'",
+    // ⑩ API通信等：接続先制限（天気API: Open-Meteo）
+    "connect-src 'self' https://api.open-meteo.com",
     // ⑪ 混在コンテンツ対策：常にHTTPSへ自動アップグレード
     "upgrade-insecure-requests",
     //Vercelのプレビュー機能（コメントUIとか）が iframe で読み込むのを容認

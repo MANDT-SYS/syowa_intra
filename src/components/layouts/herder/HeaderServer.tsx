@@ -11,14 +11,21 @@ export default async function HeaderServer() {
       return (
         <HeaderClient
           systemTitle={ConstList.SYS_TITLE}
-          userId={ctx.user.user_id}
-          userName={ctx.user.family_name + ctx.user.given_name}
+          userId={ctx.user.userId}
+          userName={ctx.user.familyName + ctx.user.givenName}
           menuItems={menuItems}
           appLinks={appLinks}
         />
       );
     });
-  } catch {
+  } catch (e) {
+    console.log('catch入った');
+     // 未ログインは正常系。それ以外はサーバーログに残す
+     const msg = e instanceof Error ? e.message : String(e);
+     if (msg !== "UNAUTHORIZED") {
+       console.error("[HeaderServer] render skipped:", e);
+       console.log(e);
+     }
     return null;
   }
 }

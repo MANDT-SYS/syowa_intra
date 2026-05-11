@@ -7,8 +7,8 @@ import {
   updateCalendar,//カレンダー更新
   removeCalendar,//カレンダー削除
   getPdfPublicUrl,//PDF公開URL取得
-} from "@/features/calendar/server/write";
-import { getCalendars } from "@/features/calendar/server/read";
+} from "@/app/calendar/server/write";
+import { getCalendars } from "@/app/calendar/server/read";
 import type { CalendarRecord } from "@/types/interface";
 
 export type CalendarWithUrl = CalendarRecord & { pdfUrl: string };

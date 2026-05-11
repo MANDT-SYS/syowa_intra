@@ -1,7 +1,8 @@
 // lib/withAuth.ts
 import { auth0 } from "@/lib/auth0";
-import { getLoginUser } from "@/server/getLoginUser";
+import { getLoginUser } from "@/server/users/getLoginUser";
 import type { AuthContext, UserInfo } from "@/types/interface";
+import { workAsyncStorage } from "next/dist/server/app-render/work-async-storage.external";
 
 // ─────────────────────────────────────────
 // 認証チェック
@@ -13,18 +14,19 @@ export async function withAuth<T>(
 ): Promise<T> {
   // ① Auth0セッション確認
   const session = await auth0.getSession();
+
   if (!session?.user) {
     throw new Error("UNAUTHORIZED"); // 未ログイン
   }
-
   // ② usersテーブルからユーザー情報取得
-  const loginUserArr = await getLoginUser(session.user.sub);
-  if (!loginUserArr || loginUserArr.length === 0) {
+  const loginUser = await getLoginUser(session.user.sub);
+ 
+  if (!loginUser ) {
     throw new Error("UNAUTHORIZED"); // アプリ未登録ユーザー
   }
 
-  const user: UserInfo = loginUserArr[0];
-  
+  const user: UserInfo = loginUser;
+
   // ③ ハンドラーにユーザー情報を渡して実行
   return handler({ sub: session.user.sub, user });
 }
