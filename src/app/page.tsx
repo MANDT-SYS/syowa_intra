@@ -177,7 +177,8 @@ const shortcuts = [
   // { icon: Wallet,   label: "経費精算",   href: "/expense"    },
   // { icon: FileText, label: "各種申請",   href: "/forms"      },
    { icon: BookOpen, label: "書類管理", href: "/document"       },
-   { icon: Calendar, label: "社内カレンダー",       href: "/calendar" },
+   { icon: FileText, label: "管理画面", href: "/management"       },
+  // { icon: Calendar, label: "社内カレンダー",       href: "/calendar" },
   // { icon: Heart,    label: "福利厚生",   href: "/benefits"   },
   // { icon: Users,    label: "社員検索",   href: "/members"    },
 ] as const;
@@ -260,7 +261,6 @@ export default async function HomePage() {
         
             </div>
           </div>
-    
         </section>
 
         {/* ---------- Body ---------- */}
@@ -288,8 +288,9 @@ export default async function HomePage() {
               ))}
             </ul>
           </section>
-    
 
+          {false && (
+  <>
           {/* お知らせ */}
           <section className="md:-mx-8 xl:-mx-16 px-0">
             <div className="flex items-baseline justify-between mb-4">
@@ -332,6 +333,9 @@ export default async function HomePage() {
               ))}
             </ul>
           </section>
+          </>
+        )}
+          
         </div>
 
         <footer className="mx-auto max-w-6xl px-6 md:px-10 pb-10 text-[11px] text-[#888780]">

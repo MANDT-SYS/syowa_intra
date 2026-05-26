@@ -170,7 +170,8 @@ export default function HeaderClient({
         <AppBar
           position="static"
           // color={isDev ? "secondary" : undefined}
-           color={isDev ? "inherit" : undefined}
+           //color={isDev ? "inherit" : undefined}
+           color={"inherit"}
            //sx={!isDev ? { backgroundColor: ConstList.RED_COLOR } : undefined}
            //ヘッダーバーの色を左を白、右を昭和レッドにグラデーションする
            sx={{
