@@ -3,6 +3,8 @@
     DBテーブル
     下記のように作成。
 
+    前提として、ユーザー、部署は外部DBを使用している為、ユーザー、部署関連のcolumnは外部キーでつなぐようなことはない。
+
         -- ============================================================
         -- document_categories（書類カテゴリーマスタテーブル）
         -- カテゴリーの追加・管理を柔軟に行うためのマスタテーブル。
@@ -22,14 +24,20 @@
             -- カテゴリーの登録日時
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-            -- カテゴリーの登録者（user_id）
+            -- カテゴリーの登録者（ログインユーザーのuser_id）
             created_by BIGINT NOT NULL,
+
+            -- カテゴリーの最終更新日時
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+            -- カテゴリーの最終更新者（ログインユーザーのuser_id）
+            updated_by BIGINT NOT NULL ,
 
             -- 論理削除日時（NULLなら有効、値があれば無効化済み）
             deleted_at TIMESTAMPTZ,
 
-            -- 論理削除実行者（user_id）
-            created_by BIGINT
+            -- 論理削除実行者（ログインユーザーのuser_id）
+            deleted_by BIGINT
         );
 
         -- テーブルコメント
@@ -41,6 +49,8 @@
         COMMENT ON COLUMN document_categories.display_order IS 'セレクトボックスでの表示順（昇順）';
         COMMENT ON COLUMN document_categories.created_at IS '登録日時';
         COMMENT ON COLUMN document_categories.created_by IS '登録者（user_id）';
+        COMMENT ON COLUMN document_categories.updated_at IS '最終更新日時';
+        COMMENT ON COLUMN document_categories.updated_by IS '最終更新者（user_id）';
         COMMENT ON COLUMN document_categories.deleted_at IS '論理削除日時（NULLなら有効）';
         COMMENT ON COLUMN document_categories.deleted_by IS '論理削除実行者（user_id）';
 
@@ -65,28 +75,43 @@
             -- 書類のタイトル（例：「出張申請書」「情報セキュリティ規程」）
             title TEXT NOT NULL,
 
+            -- 書類の管理番号（例：「SK-総-30」「SS-005」）
+            management_number TEXT NOT NULL,
+
+            -- 書類説明
+            description TEXT,
+
             -- カテゴリーID（document_categoriesテーブルへの外部キー）
             -- カテゴリーが削除されてもドキュメントは残すためSET NULL
             category_id UUID REFERENCES document_categories(id) ON DELETE SET NULL,
 
-            -- 部署名（この書類を管轄する部署）
-            department TEXT NOT NULL,
+            -- 立案部署id（この書類を管轄する部署）
+            management_division_id TEXT NOT NULL,
+
+            -- 管理開始版数
+            managed_from_revision_number INT NOT NULL DEFAULT 1,
 
             -- 最新版のrevision ID（revisionsテーブルへの外部キー）
             -- 一覧画面では、この参照先のrevisionを表示する
             -- ※ revisionsテーブル作成後に外部キー制約を追加する（循環参照回避）
             current_revision_id UUID,
 
-            -- ドキュメントの初回登録日時（自動設定）
+            -- ドキュメントの初回登録日時
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-            -- ドキュメントの初回登録者（user_id）
+            -- ドキュメントの初回登録者（ログインユーザーのuser_id）
             created_by BIGINT NOT NULL,
+
+            -- ドキュメントの最終更新日時
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+            -- ドキュメントの最終更新者（ログインユーザーのuser_id）
+            updated_by BIGINT NOT NULL,
 
             -- 論理削除日時（NULLなら未削除、値があれば削除済み）
             deleted_at TIMESTAMPTZ,
 
-            -- 論理削除を実行したユーザー（user_id）
+            -- 論理削除を実行したユーザー（ログインユーザーのuser_id）
             deleted_by BIGINT
         );
 
@@ -96,13 +121,18 @@
         -- カラムコメント
         COMMENT ON COLUMN documents.id IS '主キー（UUID自動生成）';
         COMMENT ON COLUMN documents.title IS '書類タイトル';
+        COMMENT ON COLUMN documents.management_number IS '書類の管理番号';
+        COMMENT ON COLUMN documents.description IS '書類内容の説明';
         COMMENT ON COLUMN documents.category_id IS 'カテゴリーID（FK → document_categories.id）';
-        COMMENT ON COLUMN documents.department IS '管轄部署名';
+        COMMENT ON COLUMN documents.management_division_id IS '立案部署ID';
+        COMMENT ON COLUMN documents.managed_from_revision_number IS 'このシステムで管理を開始した版番号。既存書類を途中版から登録する場合は5などを設定する。';
         COMMENT ON COLUMN documents.current_revision_id IS '最新版のrevision ID。一覧表示に使用';
         COMMENT ON COLUMN documents.created_at IS '初回登録日時';
-        COMMENT ON COLUMN documents.created_by IS '初回登録者（user_id）';
+        COMMENT ON COLUMN documents.created_by IS '初回登録者（ログインユーザーのuser_id）';
+        COMMENT ON COLUMN documents.updated_at IS '最終更新日時';
+        COMMENT ON COLUMN documents.updated_by IS '最終更新者（ログインユーザーのuser_id）';
         COMMENT ON COLUMN documents.deleted_at IS '論理削除日時（NULLなら有効）';
-        COMMENT ON COLUMN documents.deleted_by IS '論理削除実行者（user_id）';
+        COMMENT ON COLUMN documents.deleted_by IS '論理削除実行者（ログインユーザーのuser_id）';
 
 
         -- ============================================================
@@ -139,21 +169,27 @@
             -- 表示用・バリデーション用
             file_size BIGINT NOT NULL,
 
-            -- 改版内容・理由（変更内容や改版理由を記録）
+            -- 改版内容・理由（編集内容や改版理由を記録）
             -- 初版の場合はNULL可
             notes TEXT,
 
-            -- この版の登録日時 = 改版日時（自動設定）
+            -- この版の登録日時 = 改版日時
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
             -- この版の登録者 = 改版者（user_id）
             created_by BIGINT NOT NULL,
 
+            -- この版の最終更新日時 = この版データの編集日時
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+            -- この版の最終更新者 = この版データの編集者（user_id）
+            updated_by BIGINT NOT NULL,
+
             -- 版単位の論理削除日時（通常はdocument単位で削除するが、個別版の削除にも対応）
             deleted_at TIMESTAMPTZ,
 
             -- 版単位の論理削除実行者（user_id）
-            deleted_by BIGINT REFERENCES ,
+            deleted_by BIGINT,
 
             -- 同一ドキュメント内で版番号が重複しないようにする制約
             CONSTRAINT uq_document_revision UNIQUE (document_id, revision_number)
@@ -173,6 +209,8 @@
         COMMENT ON COLUMN revisions.notes IS '改版メモ・変更理由（初版はNULL可）';
         COMMENT ON COLUMN revisions.created_at IS 'この版の登録日時（= 改版日時）';
         COMMENT ON COLUMN revisions.created_by IS 'この版の登録者（user_id）';
+        COMMENT ON COLUMN revisions.updated_at IS 'この版の最終更新日時（= この版データの編集日時）';
+        COMMENT ON COLUMN revisions.updated_by IS 'この版の最終更新者（user_id）';
         COMMENT ON COLUMN revisions.deleted_at IS '版単位の論理削除日時（NULLなら有効）';
         COMMENT ON COLUMN revisions.deleted_by IS '版単位の論理削除実行者（user_id）';
 
@@ -206,8 +244,8 @@
             ON documents (category_id);
 
         -- 一覧画面: 部署での絞り込み
-        CREATE INDEX idx_documents_department
-            ON documents (department);
+        CREATE INDEX idx_documents_management_division_id
+            ON documents (management_division_id);
 
         -- 一覧画面: タイトル検索用
         CREATE INDEX idx_documents_title
@@ -230,38 +268,43 @@
 
     ## Supabase Storage
     - バケット名: `documents`
+    - 対応拡張子：word,excel,pdf,png,jpeg,image
 
     ## 画面レイアウト
-    　大体のイメージは添付画像を参考にお願い。
-    色が青のところは'#86171F'に変更して。
+    - 大体のイメージは添付画像①②③④⑤⑥⑥を参考にお願い。
   
 
-    ## 1.書類リスト表示画面
+    ## ①書類管理トップ
+    ホームのページのショートカット「書類管理書類管理」ボタンからとばせる画面。
+    - 画像①のように
+        ・書類の検索バー（）
+        ・フィルター（例：指定カテゴリで絞れる等）
+        ・新規追加ボタン
+        に加え
+        ・カテゴリ追加ボタン（管理画面の書類管理アコーディオンに飛ばすだけでいい。）
+    -新規追加ボタンはクリックするとダイアログを表示させる。
+
     - ページ遷移時にdocumentsテーブルの全データを取得する（削除済みデータは除く）
-    - 取得したデータをリスト表の中に入れる。（新規追加ボタンの下に配置）
-    　※１番新しい版のデータを入れる。
+    - 取得したデータをリスト（DataGrid）表の中に入れる。（新規追加ボタンの下に配置）
+    　※１番新しい版のデータを表示。
       - カラムは
-      　・詳細ボタン
-      　・ダウンロードボタン
       　・書類タイトル
+      　・管理番号
         ・カテゴリー名（document_categoriesテーブル内idとdocumentテーブル内category_idと同じもののカテゴリー名を表示
         　（比較の際は一応ナンバー型に変換してから行う。））
-        ・部署
+        ・立案部署
         ・登録日付
         ・改版日付
-        ・登録者名（app/document/page.tsx内で取得したallUsersとdocumentテーブル内created_byと同じもののユーザー名を表示
-        　（比較の際は一応ナンバー型に変換してから行う。））
-        ・改版者名
+        ・詳細ボタン(画像①のような目のアイコンではなく書類系のアイコンに設定してほしい)
+      　・ダウンロードボタン
+        
     - リスト表の上に検索、フィルター、新規追加ボタンを配置。
 
     
-    ## 2.新規追加ボタンクリック機能
-    - 新規追加ボタンをクリックしたら登録ダイアログを表示。
-    　書類名、書類の説明の入力、カテゴリの選択等、ファイルの選択（ドラッグアンドドロップ）、メタデータの入力。
-    　保存を押すと登録。
+
         
-    ## 3.詳細ボタンクリック機能
-    - 書類リスト表示画面リストの各行に存在する詳細ボタンをクリックしたらページ遷移。（app routerの動的ルーティング）
+    ## ②書類管理詳細
+    - ①書類管理トップの各行に存在する詳細ボタンをクリックしたらページ遷移。（app routerの動的ルーティング）
         /documents              ← リスト表ページ
         /documents/[id]         ← 詳細ページ
     
@@ -272,28 +315,93 @@
         ・ダウンロードボタン（一覧にもあるが、プレビューを見て確認してからダウンロードしたい場合、詳細画面にもあった方が親切。）
         　配置場所はプレビューの上
         ・改版ボタン
-        ・修正ボタン
+        ・編集ボタン
 
-        改版ボタン、修正ボタン はクリックするとダイアログを表示させる。
+        改版ボタン、編集ボタン はクリックするとダイアログを表示させる。
 
-        改版ダイアログ：一番下にキャンセル・改版の二つのボタンを配置。
-        　　　　　　　　内容が改定・更新されたデータや新しくドラッグアンドドロップされたファイルを、revision_number を上げて追加する。
-        　　　　　　　　※改版の際、ドラッグアンドドロップされたファイルが無ければ、同じファイルを引き続き使用。
-        　　　　　　　　旧版は履歴として残る。
-        　　　　　　　　改版ボタンをクリックするとダイアログが閉じ、改版したデータが表示される。
-    　　　　　　　　　　キャンセルはクリックでダイアログ閉じる。
+
+
+    ## ③.登録ダイアログ
+    - ①書類管理トップの新規追加ボタンをクリックしたら表示。
+        項目は
+        ・書類名（入力）
+        ・管理番号（入力）
+        ・立案部署（選択）
+        ・書類の説明（入力）
+        ・カテゴリ（選択）
+        ・管理開始版数（入力）
+        ・ファイル（選択またはドラッグアンドドロップ）。
+    　　保存を押すと登録。（DBと合うように登録者等や、版管理テーブルにも適当なデータを入れる）
+        一番下にキャンセル・追加の２つのボタンを配置。
+        ・キャンセルはクリックでダイアログ閉じる。
         
-        修正ダイアログ：一番下にキャンセル・修正、削除の3つのボタンを配置。
-        　　　　　　　　タイトルの誤字を直したり、カテゴリーを変更したり、ファイルを差し替えたり等、メタデータの編集。
-        　　　　　　　　revision_number は変わらない。
-        　　　　　　　　修正ボタンをクリックするとダイアログが閉じ、変更データが反映される。
-        　　　　　　　　削除ボタンはクリックしたら
-        　　　　　　　　　　・本当に削除して良いか？
-        　　　　　　　　　　・もし改版履歴あれば、改版の履歴があるデータだけど良いか？
-        　　　　　　　　の確認を行わせ、OKが押されたら、
-        　　　　　　　　documents（書類本体テーブル）、revisions（版テーブル）のデータを論理削除
-　　　　　　　　　　　　キャンセルはクリックでダイアログ閉じる。
+    ## ④編集ダイアログ
+        ②書類管理詳細の編集ボタンをクリックしたら表示。
+        クリックされた行のデータを初期値として各項目に入れる。
+            項目は
+            ・書類名（入力）
+            ・管理番号（入力）
+            ・立案部署（選択）
+            ・書類の説明（入力）
+            ・カテゴリ（選択）
+            ・管理開始版数（入力）
+            ・ファイル（選択またはドラッグアンドドロップ）。
+
+        一番下にキャンセル・編集、削除の3つのボタンを配置。
+        タイトルの誤字を直したり、カテゴリーを編集（修正）したり、ファイルを差し替えたり等、メタデータの編集。版数は変えない。
+
+        ※編集を行った際のrevisionsテーブルについて
+        ・ファイルの差し替えを行った場合、revisionsテーブルのfile関連カラム（path,name,type,size）も更新。
+        ・ファイルの差し替えの有無問わず、編集したら、revisions.updated_atとrevisions.updated_byも更新。
+    　　・revision_number は変わらない。
+    　　・編集ボタンをクリックするとダイアログが閉じ、編集データが反映される。
+    　　
+    　　・キャンセルはクリックでダイアログ閉じる。
+
+    ## ⑤改版ダイアログ
+        ②書類管理詳細の改版ボタンをクリックしたら表示。
+            項目は
+            ・書類名（入力）
+            ・管理番号（入力）
+            ・立案部署（選択）
+            ・書類の説明（入力）
+            ・カテゴリ（選択）
+            ・管理開始版数（入力）
+            ・ファイル（選択またはドラッグアンドドロップ）。
+
+        一番下にキャンセル・改版の二つのボタンを配置。
+        内容が改定・更新されたデータや新しくドラッグアンドドロップされたファイルを、revision_number を上げて追加する。
+        ※改版の際、ファイルの差し替えが無ければ、同じファイルデータ（path,name,type,size）を引き続き使用。（基本的には差し替えると思うが）
+    　　旧版は履歴として残る。
+    　　改版ボタンをクリックするとダイアログが閉じ、改版したデータが表示される。
+    　　・キャンセルはクリックでダイアログ閉じる。
+
+     ## 削除ダイアログ
+        ④編集ダイアログで削除がクリックされたら、本当に削除して良いか再確認させる。
+        デザインはほかのダイアログに合わせるように。
+        一番下にキャンセル・削除の二つのボタンを配置。
+        削除が押されたら、その行に関わるdocuments（書類本体テーブル）、revisions（版テーブル）のデータを論理削除
+
+    ## ⑥管理画面
+        ホームのページのショートカット「管理画面」ボタンからとばせる画面。（すでにapp内にmanagementを作成済み）
+        画像⑥のように書類管理、管理画面レベルの大項目はアコーディオン、
+        書類カテゴリレベルの中項目はタブに分け、Datagridで表示＋新規追加、１行ごとの編集、削除ボタンを追加。
+        Datagridのヘッダー項目（表示する項目）はカテゴリidとカテゴリ名のみ。
+        登録、編集、削除はダイアログを表示させる。デザインはそれぞれ他ページ、ダイアログと合う感じで統一するように。
+        登録、編集の項目はカテゴリ名のみで、キャンセル＋追加または編集ボタンをクリックさせる。
+        削除は、”カテゴリ名”を本当に削除していいですか？のダイアログ表示
 
     ## 備考
-    版を一つ前に戻したり、過去版の閲覧、ダウンロード等は今のところ必要ないと先方から言われているため一旦実装しないが、今後追加する可能性はある。
+　 ・基本的にはデータの登録、修正等は上部で定義しているDBのテーブルに入れていくため、型や項目等はそこを参照するように。
+      上部に記載のあるDBのテーブルはすでにsupabase作成済み。
+　 ・ デザインは画像優先、項目はこのファイルに書いてある内容優先
+   ・ 版を一つ前に戻したり、過去版の閲覧(改版履歴はある)、ダウンロード等は今のところ必要ないと先方から言われているため一旦実装しないが、今後追加する可能性はある。
+   ・ 他でも使用するような共通UI（buttonやDatagrid等）はなるべくcomponents/elementsに作成し、管理するようにする。
+   ・ 立案部署にはgetAllDivisionsで取得した部署データを使用
+   ・ 登録者、編集者、削除者のidにはgetLoginUserで取得したログインユーザーidを使用
+   ・ 登録、編集、削除の日付はその時のリアルタイムを取得
+   ・ 版は「ver」ではなく「1版,2版」のような感じで管理
+   ・ 管理画面は今のところ大項目の「書類管理」、中項目の「書類カテゴリ」のみの為、１つのアコーディオン、１つのタブでこれらを実装してほしい。（今後、大項目はお知らせやカレンダー等の追加予定あり、中項目も大項目ごとに追加される予定。）
+
+
         
