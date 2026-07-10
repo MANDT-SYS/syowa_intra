@@ -199,6 +199,7 @@ export default function DocumentDialogFields({
       </Box>
 
       {/* 管理開始版数 */}
+      {!showNotes && (
       <Box>
         <FieldLabel icon={<NumbersIcon sx={{ fontSize: 16 }} />}>管理開始版数</FieldLabel>
         <TextField
@@ -214,7 +215,7 @@ export default function DocumentDialogFields({
           disabled={disabled}
         />
       </Box>
-
+      )}
       {/* 改版理由（改版ダイアログのみ） */}
       {showNotes && (
         <Box>

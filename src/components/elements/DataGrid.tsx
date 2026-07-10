@@ -13,6 +13,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import {jaJP} from "@mui/x-data-grid/locales";
 
 // 行データ型の定義（any禁止、型明示）
 type Row = {
@@ -161,6 +162,9 @@ export default function ModernDataGrid() {
         <DataGrid
           rows={rows}
           columns={columns}
+          localeText={{
+            ...jaJP.components.MuiDataGrid.defaultProps.localeText,
+          }}
           disableRowSelectionOnClick
           pageSizeOptions={[5, 10, 20]}
           initialState={{
