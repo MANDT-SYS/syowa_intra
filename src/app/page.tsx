@@ -288,6 +288,18 @@ export default async function HomePage() {
               ))}
             </ul>
           </section>
+          {/* お知らせセクション */}
+          <section className="md:-mx-8 xl:-mx-16 px-0">
+            <div className="flex items-baseline justify-between mb-4">
+              <h2 className="font-[var(--font-serif)] text-[17px] font-semibold">
+                お知らせ
+              </h2>
+            </div>
+            <div className="bg-white rounded-2xl py-10 px-5 text-center border border-[#E5E2DC] text-[#888780] text-[15px]">
+              追加予定です
+            </div>
+          </section>
+     
 
           {false && (
   <>

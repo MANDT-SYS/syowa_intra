@@ -52,7 +52,9 @@ export default async function DocumentDetailPage({ params }: Props) {
     <section className="min-h-screen flex flex-col items-center px-4 py-8">
       {/* セクションの幅設定 */}
       {/* <div className="w-full max-w-7xl"> */}
-      <div className="w-full max-w-[1500px] mx-auto">
+      {/* <div className="w-full max-w-[1500px] mx-auto"></div> */}
+      <div className="w-full max-w-screen-2xl mx-auto px-[70px]">
+ 
         {/* 一覧へ戻るリンク */}
         <Link
           href="/document"

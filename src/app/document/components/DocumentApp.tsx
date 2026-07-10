@@ -37,9 +37,11 @@ import AddIcon from "@mui/icons-material/Add";
 import DownloadIcon from "@mui/icons-material/Download";
 import DescriptionIcon from "@mui/icons-material/Description";
 import CategoryIcon from "@mui/icons-material/Category";
-import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import DocumentAddDialog from "@/app/document/components/DocumentAddDialog";
 import type { DivisionInfo, DocumentCategory, DocumentListRow } from "@/types/interface";
+import { DataGrid, type GridColDef } from "@mui/x-data-grid";
+import { jaJP } from "@mui/x-data-grid/locales";
+
 
 type Props = {
   // サーバー側で取得して渡す初期データ
@@ -66,9 +68,9 @@ const categoryChipColor = (name: string | null): string => {
 };
 
 export default function DocumentApp({
-  initialDocuments,
-  categories,
-  divisions,
+  initialDocuments,//書類一覧
+  categories,//カテゴリー一覧
+  divisions,//部署一覧
 }: Props) {
   const router = useRouter();
 
@@ -79,31 +81,50 @@ export default function DocumentApp({
   // 登録ダイアログ開閉
   const [addOpen, setAddOpen] = React.useState(false);
 
-  // 検索 & フィルター適用後の行
+  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+  // ★★★検索 & フィルター適用後の行（キーワード未指定時は全件該当）★★★
+  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
   const filteredRows = React.useMemo(() => {
+    // キーワードを小文字に変換して格納
     const kw = keyword.trim().toLowerCase();
+    // 初期書類リストから検索ワードとカテゴリフィルターを適用して絞り込み
     return initialDocuments.filter((d) => {
+      // フィルターカテゴリが選択されていて、かつ書類のカテゴリIDが一致しない場合は除外
       if (filterCategoryId && d.category_id !== filterCategoryId) return false;
+      // キーワード未指定時は全件該当
       if (!kw) return true;
+      // 検索対象となる文字列を結合（書類名・管理番号・カテゴリ名・部署名。nullは空文字）
       const hay = `${d.title} ${d.management_number} ${d.category_name ?? ""} ${d.division_name ?? ""}`.toLowerCase();
+      // 検索文字列にキーワードが含まれていればtrue（該当）
       return hay.includes(kw);
     });
   }, [initialDocuments, keyword, filterCategoryId]);
 
-  // DataGrid 用（No 列は documents.id をそのまま表示）
+  // DataGrid 行データ（No 列は documents.id をそのまま表示）
   const gridRows = React.useMemo(() => filteredRows, [filteredRows]);
 
-  // ファイルダウンロード（同一オリジン API 経由で保存）
+
+  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+  // ★★★ファイルダウンロード（同一オリジン API 経由で保存）★★★
+  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
   const handleDownload = (documentId: number) => {
+    // ダウンロード用のaタグを作成
     const a = document.createElement("a");
+    // ダウンロードAPIのエンドポイントをhrefにセット（ファイルID指定）
     a.href = `/document/download?id=${documentId}`;
+    // 表示されないようにスタイルをnoneに設定
     a.style.display = "none";
+    // bodyにaタグを追加（Safariなど一部ブラウザはbodyに無いと発火しないので念のため）
     document.body.appendChild(a);
+    // プログラムからclickをトリガーしてダウンロードを開始
     a.click();
+    // 後片付けとしてaタグをDOMから削除
     document.body.removeChild(a);
   };
 
-  // カラム定義
+  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+  // ★★★カラム定義（DataGrid 列データ）★★★★★★★★★★★★★★★★★
+  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
   const columns: GridColDef<(typeof gridRows)[number]>[] = [
     {
       field: "id",
@@ -370,6 +391,24 @@ export default function DocumentApp({
           autoHeight
           rows={gridRows}
           columns={columns}
+          localeText={{
+            ...jaJP.components.MuiDataGrid.defaultProps.localeText,
+            noRowsLabel: "データがありません",
+            toolbarDensity: "表示行数",
+            footerRowSelected: (count) => `${count.toLocaleString()} 行選択中`,
+            footerTotalRows: "全体の行数:",
+            paginationRowsPerPage: "ページあたりの行数",
+            // MuiTablePagination: {
+            //   labelRowsPerPage: "ページあたりの行数",
+            //   labelDisplayedRows: ({ from, to, count }: { from: number; to: number; count: number }) =>
+            //     `${from.toLocaleString()}〜${to.toLocaleString()}件目 / 全${count !== -1 ? count.toLocaleString() : `より多くの`}件`,
+            // },
+            // MuiTablePagination: {
+            //   labelRowsPerPage: "ページあたりの行数",
+            //   labelDisplayedRows: ({ from, to, count }: { from: number; to: number; count: number }) =>
+            //     `${from.toLocaleString()}〜${to.toLocaleString()}件目 / 全${count !== -1 ? count.toLocaleString() : `より多くの`}件`,
+            // },
+          }}
           disableRowSelectionOnClick
           pageSizeOptions={[10, 25, 50]}
           initialState={{

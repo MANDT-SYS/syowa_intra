@@ -35,12 +35,13 @@ export default async function DocumentPage() {
     <section className="min-h-screen flex flex-col items-center px-4 py-8">
      {/* セクションの幅設定 */}
       {/* <div className="w-full max-w-7xl"> */}
-      <div className="w-full max-w-[1500px] mx-auto">
+      {/* <div className="w-full max-w-[1500px] mx-auto"> */}
+      <div className="w-full max-w-screen-2xl mx-auto px-[70px]">
         {/* 書類一覧、カテゴリ一覧、部署一覧のデータをDocumentAppに渡す */}
         <DocumentApp
-          initialDocuments={documents}
-          categories={categories}
-          divisions={divisions}
+          initialDocuments={documents}//書類一覧
+          categories={categories}//カテゴリー一覧
+          divisions={divisions}//部署一覧
         />
       </div>
 
