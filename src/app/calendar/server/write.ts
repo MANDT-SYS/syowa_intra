@@ -1,16 +1,32 @@
+// src/app/calendar/server/write.ts
 import "server-only";
-import { supabase, supabaseAdmin } from "@/lib/supabase";
+import { eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import { calendar } from "@/db/schema";
+import { supabase } from "@/lib/supabase";
 import type { AuthContext, CalendarRecord } from "@/types/interface";
 import { sanitizeText } from "@/lib/sanitize";
+import { assertFileSize } from "@/lib/fileSize";
 
 const BUCKET = "calendars";
+
+const calendarColumns = {
+  id: calendar.id,
+  year: calendar.year,
+  title: calendar.title,
+  storage_path: calendar.storagePath,
+  created_at: calendar.createdAt,
+  updated_at: calendar.updatedAt,
+  Priority: calendar.priority,
+};
 
 /**
  * PDFをSupabase Storageにアップロードし、storage_pathを返す
  */
 const uploadPdf = async (year: number, file: File): Promise<string> => {
+  assertFileSize(file);
   //storagePathを生成。ファイル名は年.pdf
-  const storagePath = `calendars/${year}.pdf`;
+  const storagePath = `calendars/${year}/${crypto.randomUUID()}.pdf`;
   // PDFファイル（Fileオブジェクト）はそのままsupabase-jsのstorageにはアップロードできないため、
   // まずファイルの中身をarrayBuffer（＝生のバイト配列）として取得し、
   // それをNode.jsのBuffer（バイト列を扱うクラス。バイナリファイルやバイト操作でよく使う）に変換する。
@@ -18,11 +34,11 @@ const uploadPdf = async (year: number, file: File): Promise<string> => {
   const buffer = Buffer.from(await file.arrayBuffer());
 
   //サービスロールキーを使用して、Storageにアップロード
-  const { error } = await supabaseAdmin.storage 
+  const { error } = await supabase.storage
     .from(BUCKET)
     .upload(storagePath, buffer, {
       contentType: "application/pdf",
-      upsert: true,
+      upsert: false,
     });
 
   if (error) {
@@ -37,7 +53,7 @@ const uploadPdf = async (year: number, file: File): Promise<string> => {
  * Storageからファイルを削除
  */
 const deletePdf = async (storagePath: string): Promise<void> => {
-  const { error } = await supabaseAdmin.storage
+  const { error } = await supabase.storage
     .from(BUCKET)
     .remove([storagePath]);
 
@@ -62,27 +78,27 @@ export const insertCalendar = async (
 
   const storagePath = await uploadPdf(year, file);
 
-  const { data, error } = await supabase
-    .from("calendar")
-    .insert({
-      year,
-      title: sanitizedTitle,
-      storage_path: storagePath,
-    })
-    .select()
-    .single();
-
-  if (error) {
+  let inserted: CalendarRecord | undefined;
+  try {
+    [inserted] = await db
+      .insert(calendar)
+      .values({
+        year,
+        title: sanitizedTitle,
+        storagePath,
+      })
+      .returning(calendarColumns);
+  } catch {
     await deletePdf(storagePath);
-    console.error("カレンダー追加失敗:", error.message);
+    console.error("カレンダーDB追加に失敗しました。");
     throw new Error("カレンダーの追加に失敗しました。");
   }
 
-  if (!data) {
+  if (!inserted) {
     throw new Error("追加後のカレンダー取得に失敗しました。");
   }
 
-  return data;
+  return inserted;
 };
 
 /**
@@ -101,35 +117,53 @@ export const updateCalendar = async (
   });
 
   let storagePath: string | undefined;
+  let previousStoragePath: string | undefined;
   if (file) {
+    const [existing] = await db
+      .select({ storagePath: calendar.storagePath })
+      .from(calendar)
+      .where(eq(calendar.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new Error("対象のカレンダーが見つかりません。");
+    }
+
+    previousStoragePath = existing.storagePath;
     storagePath = await uploadPdf(year, file);
   }
 
-  const updateData: Record<string, unknown> = {
-    title: sanitizedTitle,
-    updated_at: new Date().toISOString(),
-  };
-  if (storagePath) {
-    updateData.storage_path = storagePath;
-  }
+  const updateData = storagePath
+    ? { title: sanitizedTitle, updatedAt: new Date().toISOString(), storagePath }
+    : { title: sanitizedTitle, updatedAt: new Date().toISOString() };
 
-  const { data, error } = await supabase
-    .from("calendar")
-    .update(updateData)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) {
-    console.error("カレンダー更新失敗:", error.message);
+  let updated: CalendarRecord | undefined;
+  try {
+    [updated] = await db
+      .update(calendar)
+      .set(updateData)
+      .where(eq(calendar.id, id))
+      .returning(calendarColumns);
+  } catch {
+    if (storagePath) await deletePdf(storagePath);
+    console.error("カレンダーDB更新に失敗しました。");
     throw new Error("カレンダーの更新に失敗しました。");
   }
 
-  if (!data) {
+  if (!updated) {
+    if (storagePath) await deletePdf(storagePath);
     throw new Error("更新後のカレンダー取得に失敗しました。");
   }
 
-  return data;
+  if (
+    storagePath &&
+    previousStoragePath &&
+    previousStoragePath !== storagePath
+  ) {
+    await deletePdf(previousStoragePath);
+  }
+
+  return updated;
 };
 
 /**
@@ -137,26 +171,31 @@ export const updateCalendar = async (
  */
 export const removeCalendar = async (
   id: string,
-  storagePath: string,
   ctx: AuthContext
 ): Promise<void> => {
-  const { error } = await supabase
-    .from("calendar")
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-    console.error("カレンダー削除失敗:", error.message);
+  let removed: { id: string; storagePath: string } | undefined;
+  try {
+    [removed] = await db
+      .delete(calendar)
+      .where(eq(calendar.id, id))
+      .returning({ id: calendar.id, storagePath: calendar.storagePath });
+    if (!removed) throw new Error("対象のカレンダーが見つかりません。");
+  } catch {
+    console.error("カレンダーDB削除に失敗しました。");
     throw new Error("カレンダーの削除に失敗しました。");
   }
 
-  await deletePdf(storagePath);
+  if (!removed) {
+    throw new Error("対象のカレンダーが見つかりません。");
+  }
+
+  await deletePdf(removed.storagePath);
 };
 
 /**
  * storage_path を元にSupabaseのStorageの公開URLを生成
  */
 export const getPdfPublicUrl = (storagePath: string): string => {
-  const { data } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(storagePath);
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
   return data.publicUrl;
 };

@@ -1,3 +1,4 @@
+// src/app/calendar/actions.ts
 "use server";
 import "server-only";
 import { revalidatePath } from "next/cache";
@@ -10,6 +11,8 @@ import {
 } from "@/app/calendar/server/write";
 import { getCalendars } from "@/app/calendar/server/read";
 import type { CalendarRecord } from "@/types/interface";
+import { parseUuid } from "@/lib/parseUuid";
+import { assertFileSize } from "@/lib/fileSize";
 
 export type CalendarWithUrl = CalendarRecord & { pdfUrl: string };
 
@@ -41,6 +44,8 @@ export const addCalendarAction = async (
       throw new Error("年・タイトル・PDFファイルはすべて必須です。");
     }
 
+    assertFileSize(file);
+
     const record = await insertCalendar(year, title, file, ctx);
     revalidatePath("/calendar");
     return {
@@ -57,7 +62,7 @@ export const updateCalendarAction = async (
   formData: FormData
 ): Promise<CalendarWithUrl> => {
   return withAuth(async (ctx) => {
-    const id = formData.get("id") as string;
+    const id = parseUuid(formData.get("id"), "カレンダーID");
     const year = Number(formData.get("year"));
     const title = formData.get("title") as string;
     const file = formData.get("file") as File | null;
@@ -67,6 +72,7 @@ export const updateCalendarAction = async (
     }
 
     const actualFile = file && file.size > 0 ? file : null;
+    if (actualFile) assertFileSize(actualFile);
     const record = await updateCalendar(id, year, title, actualFile, ctx);
     revalidatePath("/calendar");
     return {
@@ -84,11 +90,10 @@ export type DeleteCalendarResult =
  * カレンダーを削除
  */
 export const deleteCalendarAction = async (
-  id: string,
-  storagePath: string
+  id: string
 ): Promise<DeleteCalendarResult> => {
   return withAuth(async (ctx) => {
-    await removeCalendar(id, storagePath, ctx);
+    await removeCalendar(parseUuid(id, "カレンダーID"), ctx);
     revalidatePath("/calendar");
     return { success: true, deletedId: id };
   });

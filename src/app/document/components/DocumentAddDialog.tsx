@@ -1,3 +1,4 @@
+// src/app/document/components/DocumentAddDialog.tsx
 "use client";
 
 /**
@@ -21,6 +22,7 @@ import DocumentDialogFields, {
   type DocumentFormValues,
 } from "@/app/document/components/DocumentDialogFields";
 import { addDocumentAction } from "@/app/document/actions";
+import { assertFileSize } from "@/lib/fileSize";
 import type { DivisionInfo, DocumentCategory } from "@/types/interface";
 
 type Props = {
@@ -80,6 +82,14 @@ export default function DocumentAddDialog({
     if (!values.categoryId) return setError("カテゴリを選択してください。");
     if (!values.managementDivisionId) return setError("立案部署を選択してください。");
     if (!file) return setError("ファイルを選択してください。");
+
+    if (file) {
+      try {
+        assertFileSize(file);
+      } catch (error) {
+        return setError(error instanceof Error ? error.message : "ファイルは50MB以下にしてください。");
+      }
+    }
 
     setSubmitting(true);
     try {

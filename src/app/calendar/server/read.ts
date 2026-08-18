@@ -1,20 +1,30 @@
+// src/app/calendar/server/read.ts
 import "server-only";
-import { supabase } from "@/lib/supabase";
+import { desc } from "drizzle-orm";
+import { db } from "@/db/client";
+import { calendar } from "@/db/schema";
 import type { CalendarRecord, AuthContext } from "@/types/interface";
 
 // カレンダー一覧を取得する関数
 export const getCalendars = async (ctx: AuthContext): Promise<CalendarRecord[]> => {
-  // Supabaseからcalendarテーブルの全件を年降順で取得
-  const { data, error } = await supabase
-    .from("calendar")
-    .select("*")
-    .order("year", { ascending: false });
-
-  // エラーが発生した場合はエラーメッセージを表示して空配列を返す
-  if (error) {
-    console.error("カレンダー一覧取得失敗:", error.message);
+  try {
+    return await db
+      .select({
+        id: calendar.id,
+        year: calendar.year,
+        title: calendar.title,
+        storage_path: calendar.storagePath,
+        created_at: calendar.createdAt,
+        updated_at: calendar.updatedAt,
+        Priority: calendar.priority,
+      })
+      .from(calendar)
+      .orderBy(desc(calendar.year));
+  } catch (error) {
+    console.error(
+      "カレンダー一覧取得失敗:",
+      error instanceof Error ? error.message : "不明なエラー"
+    );
     return [];
   }
-  // データが存在しない場合も空配列を返す
-  return data ?? [];
 };

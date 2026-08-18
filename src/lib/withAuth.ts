@@ -1,8 +1,8 @@
 // lib/withAuth.ts
 import { auth0 } from "@/lib/auth0";
 import { getLoginUser } from "@/server/users/getLoginUser";
+import { ExternalApiError } from "@/server/externalApi";
 import type { AuthContext, UserInfo } from "@/types/interface";
-import { workAsyncStorage } from "next/dist/server/app-render/work-async-storage.external";
 
 // ─────────────────────────────────────────
 // 認証チェック
@@ -19,7 +19,16 @@ export async function withAuth<T>(
     throw new Error("UNAUTHORIZED"); // 未ログイン
   }
   // ② usersテーブルからユーザー情報取得
-  const loginUser = await getLoginUser(session.user.sub);
+  let loginUser: UserInfo | undefined;
+  try {
+    loginUser = await getLoginUser(session.user.sub);
+  } catch (error) {
+    if (error instanceof ExternalApiError) {
+      console.warn("[withAuth] user information API unavailable:", error.kind);
+      throw new Error("ユーザー情報を取得できませんでした。時間をおいて再度お試しください。");
+    }
+    throw error;
+  }
  
   if (!loginUser ) {
     throw new Error("UNAUTHORIZED"); // アプリ未登録ユーザー

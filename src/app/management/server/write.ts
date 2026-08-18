@@ -1,12 +1,36 @@
+// src/app/management/server/write.ts
 // ============================================================
 // 管理画面：書類カテゴリ CRUD（DB操作）
 // - 必ず Server Action 経由（withAuth で認証済み）から呼び出す
 // ============================================================
 
 import "server-only";
-import { supabase } from "@/lib/supabase";
+import { and, desc, eq, isNull } from "drizzle-orm";
+import { db } from "@/db/client";
+import { documentCategories } from "@/db/schema";
 import { sanitizeText } from "@/lib/sanitize";
 import type { AuthContext, DocumentCategory } from "@/types/interface";
+
+const categoryColumns = {
+  id: documentCategories.id,
+  name: documentCategories.name,
+  display_order: documentCategories.displayOrder,
+  created_at: documentCategories.createdAt,
+  created_by: documentCategories.createdBy,
+  updated_at: documentCategories.updatedAt,
+  updated_by: documentCategories.updatedBy,
+  deleted_at: documentCategories.deletedAt,
+  deleted_by: documentCategories.deletedBy,
+};
+
+const isPostgresError = (error: unknown, code: string): boolean => {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === code
+  );
+};
 
 // ─────────────────────────────────────────────
 // 新規追加
@@ -23,40 +47,41 @@ export const insertCategory = async (
   const nowIso = new Date().toISOString();
   const userId = ctx.user.userId;
 
-  // 末尾のdisplay_orderを採用するため、現在の最大値を取得
-  const { data: maxRow } = await supabase
-    .from("document_categories")
-    .select("display_order")
-    .is("deleted_at", null)
-    .order("display_order", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  try {
+    const category = await db.transaction(async (tx) => {
+      const [maxRow] = await tx
+        .select({ display_order: documentCategories.displayOrder })
+        .from(documentCategories)
+        .where(isNull(documentCategories.deletedAt))
+        .orderBy(desc(documentCategories.displayOrder))
+        .limit(1);
 
-  const nextOrder = (maxRow?.display_order ?? 0) + 1;
+      const [inserted] = await tx
+        .insert(documentCategories)
+        .values({
+          name: sanitized,
+          displayOrder: (maxRow?.display_order ?? 0) + 1,
+          createdAt: nowIso,
+          createdBy: userId,
+          updatedAt: nowIso,
+          updatedBy: userId,
+        })
+        .returning(categoryColumns);
 
-  const { data, error } = await supabase
-    .from("document_categories")
-    .insert({
-      name: sanitized,
-      display_order: nextOrder,
-      created_at: nowIso,
-      created_by: userId,
-      updated_at: nowIso,
-      updated_by: userId,
-    })
-    .select()
-    .single();
+      if (!inserted) {
+        throw new Error("カテゴリの追加に失敗しました。");
+      }
+      return inserted;
+    });
 
-  if (error || !data) {
-    // ユニーク制約違反などの場合はメッセージを判定
-    if (error?.message?.includes("duplicate") || error?.code === "23505") {
+    return category;
+  } catch (error) {
+    if (isPostgresError(error, "23505")) {
       throw new Error("同名のカテゴリが既に存在します。");
     }
-    console.error("[insertCategory] 追加失敗:", error?.message);
+    console.error("[insertCategory] DB追加に失敗しました。");
     throw new Error("カテゴリの追加に失敗しました。");
   }
-
-  return data as DocumentCategory;
 };
 
 // ─────────────────────────────────────────────
@@ -75,26 +100,28 @@ export const updateCategory = async (
   const nowIso = new Date().toISOString();
   const userId = ctx.user.userId;
 
-  const { data, error } = await supabase
-    .from("document_categories")
-    .update({
-      name: sanitized,
-      updated_at: nowIso,
-      updated_by: userId,
-    })
-    .eq("id", id)
-    .select()
-    .single();
+  try {
+    const [updated] = await db
+      .update(documentCategories)
+      .set({
+        name: sanitized,
+        updatedAt: nowIso,
+        updatedBy: userId,
+      })
+      .where(eq(documentCategories.id, id))
+      .returning(categoryColumns);
 
-  if (error || !data) {
-    if (error?.message?.includes("duplicate") || error?.code === "23505") {
+    if (!updated) {
+      throw new Error("カテゴリの更新に失敗しました。");
+    }
+    return updated;
+  } catch (error) {
+    if (isPostgresError(error, "23505")) {
       throw new Error("同名のカテゴリが既に存在します。");
     }
-    console.error("[updateCategory] 更新失敗:", error?.message);
+    console.error("[updateCategory] DB更新に失敗しました。");
     throw new Error("カテゴリの更新に失敗しました。");
   }
-
-  return data as DocumentCategory;
 };
 
 // ─────────────────────────────────────────────
@@ -106,18 +133,20 @@ export const removeCategory = async (id: number, ctx: AuthContext): Promise<void
   const nowIso = new Date().toISOString();
   const userId = ctx.user.userId;
 
-  const { error } = await supabase
-    .from("document_categories")
-    .update({
-      deleted_at: nowIso,
-      deleted_by: userId,
-      updated_at: nowIso,
-      updated_by: userId,
-    })
-    .eq("id", id);
-
-  if (error) {
-    console.error("[removeCategory] 削除失敗:", error.message);
+  try {
+    const [removed] = await db
+      .update(documentCategories)
+      .set({
+        deletedAt: nowIso,
+        deletedBy: userId,
+        updatedAt: nowIso,
+        updatedBy: userId,
+      })
+      .where(and(eq(documentCategories.id, id), isNull(documentCategories.deletedAt)))
+      .returning({ id: documentCategories.id });
+    if (!removed) throw new Error("対象のカテゴリが見つかりません。");
+  } catch {
+    console.error("[removeCategory] DB削除に失敗しました。");
     throw new Error("カテゴリの削除に失敗しました。");
   }
 };

@@ -1,3 +1,4 @@
+// src/app/management/components/CategoryDeleteDialog.tsx
 "use client";
 
 /**

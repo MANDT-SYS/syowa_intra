@@ -1,3 +1,4 @@
+// src/app/document/components/DocumentDeleteDialog.tsx
 "use client";
 
 /**

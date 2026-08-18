@@ -1,6 +1,5 @@
 "use client";
 
-import { log } from "node:console";
 import { useEffect, useState } from "react";
 
 const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"] as const;
@@ -84,8 +83,6 @@ export default function HeroDateWeather() {
 
   if (!dateStr) return null;
 
-  console.log(weather);
-  
 
   return (
     <p className="text-base text-[#7A756D]">

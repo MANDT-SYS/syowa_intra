@@ -1,3 +1,4 @@
+// src/app/calendar/components/CalendarDialog.tsx
 //カレンダーダイアログ
 "use client";
 
@@ -10,6 +11,7 @@ import TextField from "@mui/material/TextField";
 import Button from "@/components/elements/Button";
 import MuiButton from "@mui/material/Button";
 import type { CalendarWithUrl } from "@/app/calendar/actions";
+import { assertFileSize } from "@/lib/fileSize";
 
 // Props型: コンポーネントが受け取るプロパティの型定義
 type Props = {
@@ -72,9 +74,17 @@ export default function CalendarDialog({
 
     //新規・編集の場合で、既存のカレンダー年リストに年が含まれている場合はエラー
     if (existingYears.includes(year) && existingTitles.includes(title)) {
-      console.log(existingYears);
       setErrorMessage(`${year}年「${title}」のカレンダーは既に登録されています。`);
       return;
+    }
+
+    if (file) {
+      try {
+        assertFileSize(file);
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "ファイルは50MB以下にしてください。");
+        return;
+      }
     }
 
     setSaving(true);
@@ -88,8 +98,6 @@ export default function CalendarDialog({
       if (file) {
         formData.append("file", file);
       }
-      console.log(formData);
-      
       await onSave(formData);
       onClose();
     } catch (e) {

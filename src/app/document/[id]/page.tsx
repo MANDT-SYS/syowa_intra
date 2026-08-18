@@ -1,3 +1,4 @@
+// src/app/document/[id]/page.tsx
 // ============================================================
 // ② 書類管理 詳細ページ（/document/[id]）
 // - Next.js 16 の動的ルーティング
@@ -9,6 +10,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { withAuth } from "@/lib/withAuth";
+import { parsePositiveSafeInteger } from "@/lib/parseId";
 import {
   getActiveCategories,
   getDocumentDetail,
@@ -28,16 +30,18 @@ type Props = {
 
 export default async function DocumentDetailPage({ params }: Props) {
   const { id: idStr } = await params;
-  const id = Number(idStr);
-  if (!Number.isFinite(id) || id <= 0) notFound();
+  let id: number;
+  try {
+    id = parsePositiveSafeInteger(idStr);
+  } catch {
+    notFound();
+  }
 
   // 認証 + 初期データ並列取得
   const data = await withAuth(async () => {
-    const [detail, categories, divisions] = await Promise.all([
-      getDocumentDetail(id),
-      getActiveCategories(),
-      getAllDivisions(),
-    ]);
+    const detail = await getDocumentDetail(id);
+    const categories = await getActiveCategories();
+    const divisions = await getAllDivisions();
     return {
       detail,
       categories,

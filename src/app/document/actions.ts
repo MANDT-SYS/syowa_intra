@@ -1,3 +1,4 @@
+// src/app/document/actions.ts
 // ============================================================
 // 書類管理：Server Actions
 // - クライアントコンポーネント（ダイアログ等）から呼ばれる入口。
@@ -9,6 +10,8 @@
 import "server-only";
 import { revalidatePath } from "next/cache";
 import { withAuth } from "@/lib/withAuth";
+import { parsePositiveSafeInteger } from "@/lib/parseId";
+import { assertFileSize } from "@/lib/fileSize";
 import {
   insertDocument,
   updateDocument,
@@ -32,15 +35,16 @@ const formNumber = (fd: FormData, key: string, fallback = 0): number => {
 
 // FormDataから任意ID（未選択は null）を取り出すヘルパ
 const formOptionalId = (fd: FormData, key: string): number | null => {
-  const n = formNumber(fd, key, NaN);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  const value = fd.get(key);
+  if (typeof value !== "string" || value === "") return null;
+  return parsePositiveSafeInteger(value, key);
 };
 
 // FormDataから必須IDを取り出すヘルパ
 const formRequiredId = (fd: FormData, key: string): number => {
-  const n = formNumber(fd, key, NaN);
-  if (!Number.isFinite(n) || n <= 0) throw new Error(`${key}が不正です。`);
-  return n;
+  const value = fd.get(key);
+  if (typeof value !== "string") throw new Error(`${key}が不正です。`);
+  return parsePositiveSafeInteger(value, key);
 };
 
 // ─────────────────────────────────────────────
@@ -59,6 +63,8 @@ export const addDocumentAction = async (formData: FormData): Promise<{ id: numbe
     if (!file || file.size === 0) {
       throw new Error("ファイルを選択してください。");
     }
+
+    assertFileSize(file);
 
     const inserted = await insertDocument({
       title,
@@ -93,6 +99,7 @@ export const editDocumentAction = async (formData: FormData): Promise<{ id: numb
     const fileRaw = formData.get("file") as File | null;
     // size=0 のときは「差し替え無し」とみなす
     const newFile = fileRaw && fileRaw.size > 0 ? fileRaw : null;
+    if (newFile) assertFileSize(newFile);
 
     await updateDocument({
       documentId,
@@ -128,6 +135,7 @@ export const reviseDocumentAction = async (formData: FormData): Promise<{ id: nu
     const notes = formString(formData, "notes");
     const fileRaw = formData.get("file") as File | null;
     const newFile = fileRaw && fileRaw.size > 0 ? fileRaw : null;
+    if (newFile) assertFileSize(newFile);
 
     await reviseDocument({
       documentId,
@@ -158,13 +166,14 @@ export type DeleteDocumentResult =
 export const removeDocumentAction = async (
   documentId: number
 ): Promise<DeleteDocumentResult> => {
-  return withAuth(async (ctx) => {
+  const safeDocumentId = parsePositiveSafeInteger(documentId, "documentId");
+  return withAuth<DeleteDocumentResult>(async (ctx) => {
     try {
-      await removeDocument({ documentId, ctx });
+      await removeDocument({ documentId: safeDocumentId, ctx });
       revalidatePath("/document");
-      return { success: true, deletedId: documentId };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "削除に失敗しました。";
+      return { success: true, deletedId: safeDocumentId };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "削除に失敗しました。";
       return { success: false, error: msg };
     }
   });

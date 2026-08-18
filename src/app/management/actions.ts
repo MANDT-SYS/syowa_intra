@@ -1,3 +1,4 @@
+// src/app/management/actions.ts
 // ============================================================
 // 管理画面：書類カテゴリの Server Actions
 // - クライアント（カテゴリダイアログ）から呼ぶ
@@ -7,6 +8,7 @@
 import "server-only";
 import { revalidatePath } from "next/cache";
 import { withAuth } from "@/lib/withAuth";
+import { parsePositiveSafeInteger } from "@/lib/parseId";
 import {
   insertCategory,
   updateCategory,
@@ -33,8 +35,10 @@ export const editCategoryAction = async (
   id: number,
   name: string
 ): Promise<DocumentCategory> => {
+  const safeId = parsePositiveSafeInteger(id, "カテゴリID");
+
   return withAuth(async (ctx) => {
-    const updated = await updateCategory(id, name, ctx);
+    const updated = await updateCategory(safeId, name, ctx);
     revalidatePath("/management");
     revalidatePath("/document");
     return updated;
@@ -51,12 +55,14 @@ export type DeleteCategoryResult =
 export const removeCategoryAction = async (
   id: number
 ): Promise<DeleteCategoryResult> => {
+  const safeId = parsePositiveSafeInteger(id, "カテゴリID");
+
   return withAuth(async (ctx) => {
     try {
-      await removeCategory(id, ctx);
+      await removeCategory(safeId, ctx);
       revalidatePath("/management");
       revalidatePath("/document");
-      return { success: true, deletedId: id };
+      return { success: true, deletedId: safeId };
     } catch (e) {
       const msg = e instanceof Error ? e.message : "削除に失敗しました。";
       return { success: false, error: msg };

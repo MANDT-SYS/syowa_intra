@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Geist, Geist_Mono } from "next/font/google";
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import HeaderServer from "@/components/layouts/herder/HeaderServer";
 import "./globals.css";
@@ -9,16 +8,6 @@ import { Breadcrumbs } from "@/components/layouts/breadcrumbs/Breadcrumbs";
 
 // Googleフォント「Geist Sans」と「Geist Mono」をNext.jsに読み込むための設定。
 // それぞれフォント変数を設定して、latinサブセットを指定している。
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 // Next.jsのSEO用メタデータ。ページのタイトルと説明を定義している。
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -37,10 +26,7 @@ export default async function RootLayout({
 }>) {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         <AppRouterCacheProvider options={{ nonce }}>
           <MuiXLicense />

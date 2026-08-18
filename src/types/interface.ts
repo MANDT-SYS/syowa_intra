@@ -10,8 +10,8 @@ export interface CalendarRecord {
     year: number//年
     title: string//タイトル
     storage_path: string//ストレージパス
-    created_at: string//作成日時
-    updated_at: string//更新日時
+    created_at: string | null//作成日時
+    updated_at: string | null//更新日時
 }
 
 //ヘッダー

@@ -1,73 +1,77 @@
 ---
-description: プロジェクト全体の基本ルール
+description: 昭和イントラの基本・DB・Storage運用ルール
 globs: **/*
 alwaysApply: true
 ---
 
 # プロジェクト概要
-- Next.js (App Router) + TypeScript のWebアプリ
-- ホスティング: Vercel
-- DB: Supabase
-- Storage:Supabase
-- 認証: Auth0
 
-# 技術スタック
-- Next.js 14+ (App Router)
-- TypeScript
-- Supabase (@supabase/supabase-js)
-- githubと連携
-- githubにプッシュすることで自動でVercel にデプロイ
+- 昭和産業向け社内イントラ。Next.js 16.2 / React 19 / TypeScript / MUI を使用し、Vercelへデプロイする。
+- 認証はAuth0。Runtime DBアクセスはDrizzle ORM + Postgres.js、ファイルStorageはSupabase Storageを使用する。
+- ユーザー・部署情報は外部管理APIから取得し、ローカルDBに存在すると仮定しない。
+- 原則Server Componentとし、ブラウザAPI・イベント・状態管理が必要な場合だけ`"use client"`を付ける。
+- TypeScriptを使い、`any`は原則使わない。既存のexport形式・機能別の配置に合わせる。
 
-# コーディング規約
-- 言語は TypeScript。any 禁止、型を明示する
-- コンポーネントはすべて関数コンポーネント + named export
-- `"use client"` は必要な場合のみ付与。デフォルトは Server Component
-- データの登録や変更、削除、取得の際の認証は`lib/withAuth.ts`のwithAuthを通す。
+# 配置と認証
 
-# ディレクトリ構成
-- `src/` ディレクトリ配下に、アプリの全てのソースコード・ロジック・ページ・コンポーネントを格納する。
-  - `app/`: Next.js App Router の各ページ（ルーティングごとにディレクトリを分割）
-    - 機能ごと（例: calendar, document, my_page）にディレクトリを作成し、その中に
-    `page.tsx`（画面本体）
-    `components/`（その機能専用のUI部品）
-    `server/`（DB呼び出しなどのサーバーサイドロジック）
-    `actions.ts`（サーバーアクションやエンドポイント）
-    等を必要に応じて配置する。
-    - 例:  
-      - `calendar/`
-        - `page.tsx` : ページ本体
-        - `components/CalendarApp.tsx` : calendarコンポーネント
-        - `components/CalendarDialog.tsx` : calendar登録・更新ダイアログコンポーネント
-        - `server/read.ts` : 読込処理
-        - `server/write.ts` : 登録・更新処理
-        - `actions.ts` : サーバーアクション
-  - `components/`: 全体で共通利用する汎用UIコンポーネント（例: Button, DataGrid など）
-  - `server/`: 全体共通のサーバーロジックやAPI、ユーティリティを配置（複数機能で使うもの）
-  - `lib/`: SupabaseやAuth0などの外部サービス連携・認証処理やAPIクライアント
-  - `types/`: 型定義（TypeScriptのインターフェイスや型エイリアス）
+- 機能固有の画面・`actions.ts`・`server/read.ts`・`server/write.ts`・コンポーネントは`src/app/<feature>/`へ置く。
+- Client ComponentはServer Action経由で更新し、DB・Storageへ直接アクセスしない。
+- 保護対象の取得・更新は`withAuth`を経由し、Auth0セッションと外部ユーザーAPIの確認を維持する。
+- protected pageのAuth0 session確認・ログインredirect導線を、`withAuth`のエラーだけに戻さない。
+- 外部APIには既存の10秒timeout・cache方針を適用し、無期限待機する`fetch`を追加しない。
+- Phase 5の認可は`getUserPermissions`と`assertCan*`へ集約する。DEVELOPERは`MASTER_AUTHORITY`で特定する開発者本人専用権限であり、DBから付与・解除しない。
+- DEVELOPERとAUTHORIZED_USERは権限設定を利用できる。認可は必ず`withAuth`で得たactorUserIdを用い、画面由来のtargetUserIdを認可判定へ使わない。
 
+# DB・Storage
 
-- 機能追加時は、`calendar`ディレクトリ内の構造を参考に、ページディレクトリ・components・server・actions等を機能ごとに分割し、責任ごとにファイルを配置すること。
+- Runtime DBアクセスは`src/db/client.ts`のDrizzle ORM + Postgres.jsのみを使う。Supabase Data API（`supabase.from(...)`）を新規追加しない。
+- Runtimeは`DATABASE_URL`を使う。Postgres.js設定は`max: 1`、`prepare: false`、`connect_timeout: 10`、`idle_timeout: 20`。開発時はDrizzle instanceを`globalThis`で再利用し、通常リクエストで`sql.end()`を呼ばない。
+- `DIRECT_URL`は`drizzle.config.ts`のDB introspection用であり、runtimeへ流用しない。当面はdatabase-first運用とし、DB変更は「SQL案の事前提示 → ユーザー承認 → ユーザーがSupabase SQL EditorでDDL実行 → `npm run db:pull` → schema / relations差分確認 → `docs/intra_db.sql`更新 → lint・型確認・build」の順で行う。
+- `src/db/schema.ts`と`src/db/relations.ts`は実DBからの`db:pull`結果を正とする。DBのtable・column・FK・index構造は原則手修正せず、DB変更後に`npm run db:pull`で同期する。
+- `db:pull`で保持できない承認済みのDrizzle TypeScript mappingは、再現可能なnormalize処理で補正する。昭和イントラでnumberとして扱うBIGINT / BIGSERIALのID、外部user ID、監査user ID、`revisions.file_size`は、DB型をBIGINTのまま維持し、`scripts/normalize-drizzle-schema.mjs`の明示allowlistにより`mode: "number"`へ補正する。都度の手修正や全BIGINTの一括置換をしない。
+- database-first運用中は`drizzle-kit migrate`、`drizzle-kit push`、`drizzle-kit generate`を通常のDB変更フローとして使用しない。migration運用へ移行する場合は、Drizzle Kit更新、全環境のbaseline設計、ユーザー承認を別作業で行う。
+- `src/lib/postgres.ts`、`test-db.mjs`、`pg`・`@types/pg`の直接利用、`PG_HOST`・`PG_PORT`・`PG_DATABASE`・`PG_USER`・`PG_PASSWORD`・`PG_SSL`は廃止済み。復活させない。
+- Supabase JSはStorage専用。`supabase.storage.from(...)`は使用してよいが、DBアクセスへ使わない。
+- DB・Storage処理はserver-onlyを保ち、feature配下の`server/read.ts`・`server/write.ts`へ置く。
 
-# Supabase ルール
-- クライアント生成は `lib/supabase.ts`
-- クエリビルダーで記述
+# Transaction・ID・削除
 
-# エラーハンドリング
-- Supabase の呼び出しは `{ data, error }` を必ずチェック
-- ユーザー向けエラーは日本語で表示
+- `db.transaction(async (tx) => ...)`内のDB操作は必ず`tx`を使う。callback内でグローバル`db`、Storage、外部API、Auth0、長時間I/Oを使わない。
+- `max: 1`のため、同一ページで複数のDB readを不用意に`Promise.all`で並列化しない。現在正常な直列処理を根拠なく並列化せず、`max: 1`も明示依頼なしに変更しない。
+- DBのbigint物理列は維持し、Drizzleでは対象ID・外部キーを`mode: "number"`で扱う。書類・カテゴリ・revision等のDB内部数値IDは`parsePositiveSafeInteger`、calendar UUIDは`parseUuid`で検証する。外部`UserInfo.userId`は負数を含むsafe integerを取り得るため、権限設定の対象IDは`parseExternalUserId`で検証する。`ConstList.MASTER_AUTHORITY`（現在は`0`）だけはDEVELOPER本人として明示的に変更対象から除外する。
+- revisionの正式テーブル名は`revisions`。`document_revisions`を使わない。
+- documents・categoriesは論理削除し、通常取得は`deleted_at IS NULL`。削除対象0件は成功扱いにしない。書類削除ではrevisionsも論理削除し、Storage objectは残す。
+- calendarはDB・Storageとも物理削除する。Storage削除にはDBから返された`storage_path`を使い、クライアント由来の推測pathを使わない。
 
-# レスポンス言語
-- コード中のコメントは日本語
-- 説明・回答も日本語で行う
+# Storage・アップロード
 
-# その他
-- ユーザー取得は上田さんAPIを使用して経理サーバーのpostgresから取得
+- 書類：`documents` bucket、`<documentId>/<revisionId>/<UUID><ext>`、DBは`revisions.file_path`。改版時は新revision用objectを追加し、旧revision objectは削除しない。
+- カレンダー：現行は`calendars` bucket、`calendars/<year>/<UUID>.pdf`、DBは`calendar.storage_path`。更新は新UUID pathへuploadし、DB成功後に旧objectをbest effort削除する。固定pathへのoverwriteへ戻さない。
+- カレンダーStorage pathは将来の大幅改修時に`<year>/<UUID>.pdf`へ簡素化する候補がある。現時点では変更せず、既存`calendar.storage_path`との互換性・データ移行方針を決めてから対応する。
+- `calendar`テーブルには開発途中の旧形式`calendars/<year>.pdf`を持つ行が残っている。カレンダー大幅改修まで、明示依頼なしにDELETE・一括path修正・migration・年一意制約追加を行わない。
+- Phase 4のStorage棚卸しで、`documents` bucketの旧`calendars/`・`documents/`、`calendars` bucketの旧`calendars/calendars/`・`documents/`は削除済み。現行コードでこれら旧階層を再生成しない。
+- `documents` bucket直下の数値フォルダは現行書類Storageとして使用するため、旧階層と混同して削除しない。
+- 全アップロードの上限は50 MiB（`MAX_UPLOAD_FILE_SIZE_BYTES`）。Client Component、Server Action、Storage upload直前で検証する。Server Actions / proxyの受信上限55mbを変えない。
 
+# フォント・production build
 
+- `next/font/google`、Geist、Geist Monoは使用しない。build時のGoogle Fonts外部通信依存は撤去済み。
+- sans-serifは`Arial, Helvetica, sans-serif`、monospaceは`"Courier New", Courier, monospace`のsystem fontを使用する。
+- system font化後、`npm run lint`、`npx tsc --noEmit`、`npm run build`は成功確認済み。Google Fonts取得失敗によるproduction build未確認は解消済み。
+- `src/middleware.ts`の旧Middleware規約に関するdeprecated警告は残るが、production buildの失敗原因ではない。`proxy.ts`への移行は明示依頼なしに行わない。
 
+# Next.js・安全な作業
 
+- Next.jsに関係する実装前は、インストール済みNext.jsの`node_modules/next/dist/docs/`配下のローカル公式ドキュメントを確認する。旧バージョン知識だけでApp Router、Server Action、Route Handler、Middleware / Proxyを変更しない。
+- `src/middleware.ts`はAuth0、IP制限、CSP、matcherを担う。`src/app/middleware.ts`は削除済みであり、古い資料を根拠に復活させない。
+- DB schema、migration、DDL、RLS、制約、index、sequence、実DB・Storage操作は明示承認なしに実行しない。SQLが必要なら、コマンド全文・SQL全文・使用環境変数・READ/WRITE・対象・影響・理由を先に提示する。
+- INSERT、UPDATE、DELETE、Storage upload・remove・move等の実操作は、通常のコード調査・実装と分け、明示承認なしに行わない。
+- `_reference/education_training/`は参照専用。アプリからimportせず、明示依頼なしに変更しない。lint / TypeScriptチェック対象外とし、`.git/info/exclude`の既存方針を維持する。
+- `.env.local`、秘密情報、セッション、ユーザー情報、DB結果をログや回答へ不用意に出さない。
 
+# 既知リスク・保留事項
 
-
-
+- revision番号・カテゴリdisplay orderはいずれも`max + 1`で同時実行競合の余地がある。revisionの`23505`は再試行案内へ変換済み。
+- カレンダーのDB成功後の旧object削除、DB削除後のStorage削除は失敗時に孤立objectを残し得る。
+- 書類削除後の読み込み停止は一度のみ発生し、その後2回の再現確認では発生していない。原因未確定であり、これだけを理由に`max: 1`等を変更しない。
+- カレンダーの年一意性・年変更・過去カレンダーの扱い・Storage path簡素化は、今後の大幅改修時にまとめて仕様決定する。

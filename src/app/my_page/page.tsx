@@ -1,3 +1,4 @@
+// src/app/my_page/page.tsx
 import { auth0 } from "@/lib/auth0";
 import Button from '@/components/elements/Button';
 

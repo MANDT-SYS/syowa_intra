@@ -1,3 +1,4 @@
+// src/app/document/components/DocumentEditDialog.tsx
 "use client";
 
 /**
@@ -23,6 +24,7 @@ import DocumentDialogFields, {
   type DocumentFormValues,
 } from "@/app/document/components/DocumentDialogFields";
 import { editDocumentAction } from "@/app/document/actions";
+import { assertFileSize } from "@/lib/fileSize";
 import type { DivisionInfo, DocumentCategory, DocumentDetailData } from "@/types/interface";
 
 type Props = {
@@ -104,6 +106,14 @@ export default function DocumentEditDialog({
     if (!values.managementNumber.trim()) return setError("管理番号を入力してください。");
     if (!values.categoryId) return setError("カテゴリを選択してください。");
     if (!values.managementDivisionId) return setError("立案部署を選択してください。");
+
+    if (file) {
+      try {
+        assertFileSize(file);
+      } catch (error) {
+        return setError(error instanceof Error ? error.message : "ファイルは50MB以下にしてください。");
+      }
+    }
 
     setSubmitting(true);
     try {

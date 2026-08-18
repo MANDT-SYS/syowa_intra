@@ -1,3 +1,4 @@
+// src/app/document/components/DocumentDetailApp.tsx
 "use client";
 
 /**

@@ -18,14 +18,8 @@ export default async function HeaderServer() {
         />
       );
     });
-  } catch (e) {
-    console.log('catch入った');
-     // 未ログインは正常系。それ以外はサーバーログに残す
-     const msg = e instanceof Error ? e.message : String(e);
-     if (msg !== "UNAUTHORIZED") {
-       console.error("[HeaderServer] render skipped:", e);
-       console.log(e);
-     }
-    return null;
+  } catch (error) {
+    if (error instanceof Error && error.message === "UNAUTHORIZED") return null;
+    throw error;
   }
 }

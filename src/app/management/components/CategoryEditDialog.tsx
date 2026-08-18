@@ -1,3 +1,4 @@
+// src/app/management/components/CategoryEditDialog.tsx
 "use client";
 
 /**

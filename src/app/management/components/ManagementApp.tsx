@@ -1,3 +1,4 @@
+// src/app/management/components/ManagementApp.tsx
 "use client";
 
 /**
@@ -15,6 +16,7 @@
  */
 
 import * as React from "react";
+import Link from "next/link";
 import {
   Accordion,
   AccordionSummary,
@@ -25,6 +27,7 @@ import {
   Tab,
   Tabs,
   Typography,
+  Button,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DescriptionIcon from "@mui/icons-material/Description";
@@ -33,6 +36,7 @@ import type { DocumentCategoryWithCount } from "@/types/interface";
 
 type Props = {
   initialCategories: DocumentCategoryWithCount[];
+  canManageAuthorities: boolean;
 };
 
 // 中項目タブの定義型
@@ -52,13 +56,13 @@ type SectionDef = {
   tabs: TabDef[];
 };
 
-export default function ManagementApp({ initialCategories }: Props) {
-  // 「書類管理」アコーディオンを定義
+export default function ManagementApp({ initialCategories, canManageAuthorities }: Props) {
+  // 「マスター管理」アコーディオンを定義
   const sections: SectionDef[] = [
     {
-      key: "documents",
-      title: "書類管理",
-      description: "カテゴリ・テンプレート等の管理",
+      key: "master",
+      title: "マスター管理",
+      description: "",
       icon: <DescriptionIcon sx={{ color: "#86171F" }} />,
       defaultOpen: true,
       tabs: [
@@ -87,6 +91,17 @@ export default function ManagementApp({ initialCategories }: Props) {
       <Typography variant="h6" sx={{ fontWeight: 700, color: "#2C2C2A", mb: 2 }}>
         管理
       </Typography>
+
+      {canManageAuthorities && (
+        <Button
+          component={Link}
+          href="/management/authorities"
+          variant="outlined"
+          sx={{ mb: 2, borderColor: "#C7C2B8", color: "#5F5E5A" }}
+        >
+          権限設定
+        </Button>
+      )}
 
       {/* セクション（アコーディオン）リスト */}
       <Stack spacing={1.5}>

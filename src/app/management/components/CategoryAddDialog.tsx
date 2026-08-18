@@ -1,3 +1,4 @@
+// src/app/management/components/CategoryAddDialog.tsx
 "use client";
 
 /**

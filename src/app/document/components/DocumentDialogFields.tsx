@@ -1,3 +1,4 @@
+// src/app/document/components/DocumentDialogFields.tsx
 "use client";
 
 /**

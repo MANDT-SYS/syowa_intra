@@ -1,3 +1,4 @@
+// src/app/calendar/components/CalendarApp.tsx
 //カレンダーアプリ
 "use client";
 
@@ -98,10 +99,7 @@ export default function CalendarApp({ initialCalendars }: Props) {
     if (!currentCalendar) return;
     setErrorMessage("");
     try {
-      const result = await deleteCalendarAction(
-        currentCalendar.id,
-        currentCalendar.storage_path
-      );
+      const result = await deleteCalendarAction(currentCalendar.id);
       if (!result.success) {
         setErrorMessage(result.error);
         return;

@@ -1,3 +1,4 @@
+// src/app/document/download/route.ts
 // ============================================================
 // 書類ファイルのダウンロード API
 // - 同一オリジン経由で Content-Disposition: attachment を返す
@@ -6,13 +7,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/withAuth";
+import { parsePositiveSafeInteger } from "@/lib/parseId";
 import { getDocumentDownloadData } from "@/app/document/server/read";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const idStr = req.nextUrl.searchParams.get("id");
-  const id = Number(idStr);
-
-  if (!Number.isFinite(id) || id <= 0) {
+  let id: number;
+  try {
+    id = parsePositiveSafeInteger(idStr ?? "");
+  } catch {
     return NextResponse.json({ error: "不正なIDです。" }, { status: 400 });
   }
 

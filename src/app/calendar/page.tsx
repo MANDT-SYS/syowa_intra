@@ -1,4 +1,7 @@
+// src/app/calendar/page.tsx
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { auth0 } from "@/lib/auth0";
 import { withAuth } from "@/lib/withAuth";
 import { getCalendars } from "@/app/calendar/server/read";
 import { getPdfPublicUrl } from "@/app/calendar/server/write";
@@ -11,6 +14,11 @@ export const metadata: Metadata = {
 };
 
 export default async function CalendarPage() {
+  const session = await auth0.getSession();
+  if (!session?.user) {
+    redirect("/auth/login?returnTo=%2Fcalendar");
+  }
+
   // withAuthで認証済みのユーザー情報(ctx)を取得し処理を実行
   //calendars: 全カレンダー一覧（calendarアプリに渡すためのデータ）
   const calendars = await withAuth(async (ctx) => {

@@ -1,3 +1,4 @@
+// src/app/document/test/page.tsx
 import { auth0 } from "@/lib/auth0";
 import Button from '@/components/elements/Button';
 import { withAuth } from "@/lib/withAuth";
@@ -14,12 +15,10 @@ export default async function Document() {
   //   return getAllUsers();
   // });
 
-  // console.log(allUsers);
   //初期レンダリング用の全部署データ取得
 //   const allDivisions = await withAuth(async () => {
 //     return getAllDivisions();
 //   });
-//   console.log(allDivisions);
 
     return (
       <>

@@ -1,3 +1,4 @@
+// src/app/document/server/read.ts
 // ============================================================
 // 書類管理：データ取得処理（Supabase + 部署API）
 // - サーバーコンポーネント、Server Actionの双方から呼ぶ。
@@ -5,7 +6,10 @@
 // ============================================================
 
 import "server-only";
-import { supabase, supabaseAdmin } from "@/lib/supabase";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { db } from "@/db/client";
+import { documentCategories, documents, revisions } from "@/db/schema";
+import { supabase } from "@/lib/supabase";
 import { getAllDivisions } from "@/server/divisions/getAllDivisions";
 import type {
   DivisionInfo,
@@ -26,7 +30,7 @@ const BUCKET = "documents";
 // Storage上のpathから公開URLを生成
 const getPublicUrl = (path: string | null | undefined): string | null => {
   if (!path) return null;
-  const { data } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
   return data.publicUrl;
 };
 
@@ -46,17 +50,29 @@ const buildDivisionMap = async (): Promise<Map<number, string>> => {
 // 新規追加ダイアログ・編集ダイアログのセレクトボックスで使う
 // ─────────────────────────────────────────────
 export const getActiveCategories = async (): Promise<DocumentCategory[]> => {
-  const { data, error } = await supabase
-    .from("document_categories")
-    .select("*")
-    .is("deleted_at", null)
-    .order("display_order", { ascending: true });
-
-  if (error) {
-    console.error("[getActiveCategories] 取得失敗:", error.message);
+  try {
+    return await db
+      .select({
+        id: documentCategories.id,
+        name: documentCategories.name,
+        display_order: documentCategories.displayOrder,
+        created_at: documentCategories.createdAt,
+        created_by: documentCategories.createdBy,
+        updated_at: documentCategories.updatedAt,
+        updated_by: documentCategories.updatedBy,
+        deleted_at: documentCategories.deletedAt,
+        deleted_by: documentCategories.deletedBy,
+      })
+      .from(documentCategories)
+      .where(isNull(documentCategories.deletedAt))
+      .orderBy(asc(documentCategories.displayOrder));
+  } catch (error) {
+    console.error(
+      "[getActiveCategories] 取得失敗:",
+      error instanceof Error ? error.message : "不明なエラー"
+    );
     return [];
   }
-  return (data ?? []) as DocumentCategory[];
 };
 
 // ─────────────────────────────────────────────
@@ -67,94 +83,59 @@ export const getActiveCategories = async (): Promise<DocumentCategory[]> => {
 // - 部署名は外部APIの部署マップから引く
 // ─────────────────────────────────────────────
 export const getDocumentList = async (): Promise<DocumentListRow[]> => {
-  // Supabaseのrelationship指定で「current_revision_id → revisions.id」の単一行取得
-  // current_revision_id がない（初版未登録など）場合は null になる
-  const { data, error } = await supabase
-    .from("documents")
-    .select(
-      `
-        id,
-        title,
-        management_number,
-        description,
-        category_id,
-        management_division_id,
-        managed_from_revision_number,
-        current_revision_id,
-        created_at,
-        document_categories:category_id ( id, name ),
-        current_revision:current_revision_id (
-          id,
-          revision_number,
-          file_path,
-          file_name,
-          file_type,
-          created_at
-        )
-      `
-    )
-    .is("deleted_at", null)
-    .order("id", { ascending: true });
-
-  if (error) {
-    console.error("[getDocumentList] 取得失敗:", error.message);
+  let rows;
+  try {
+    rows = await db
+      .select({
+        id: documents.id,
+        title: documents.title,
+        management_number: documents.managementNumber,
+        description: documents.description,
+        category_id: documents.categoryId,
+        management_division_id: documents.managementDivisionId,
+        managed_from_revision_number: documents.managedFromRevisionNumber,
+        current_revision_id: documents.currentRevisionId,
+        created_at: documents.createdAt,
+        category_name: documentCategories.name,
+        current_revision_number: revisions.revisionNumber,
+        current_file_path: revisions.filePath,
+        current_file_name: revisions.fileName,
+        current_file_type: revisions.fileType,
+        revised_at: revisions.createdAt,
+      })
+      .from(documents)
+      .leftJoin(documentCategories, eq(documents.categoryId, documentCategories.id))
+      .leftJoin(revisions, eq(documents.currentRevisionId, revisions.id))
+      .where(isNull(documents.deletedAt))
+      .orderBy(asc(documents.id));
+  } catch (error) {
+    console.error(
+      "[getDocumentList] 取得失敗:",
+      error instanceof Error ? error.message : "不明なエラー"
+    );
     return [];
   }
 
   const divisionMap = await buildDivisionMap();
 
-  // Supabaseのリレーション結果はオブジェクト or 配列で返るためここで安全に取り出す
-  type Joined = {
-    id: number;
-    title: string;
-    management_number: string;
-    description: string | null;
-    category_id: number | null;
-    management_division_id: number;
-    managed_from_revision_number: number;
-    current_revision_id: number | null;
-    created_at: string;
-    document_categories: { id: number; name: string } | { id: number; name: string }[] | null;
-    current_revision:
-      | {
-          id: number;
-          revision_number: number;
-          file_path: string;
-          file_name: string;
-          file_type: DocumentFileType;
-          created_at: string;
-        }
-      | null;
-  };
-
-  const rows: DocumentListRow[] = ((data as unknown as Joined[]) ?? []).map((d) => {
-    // categoryは relationship 設定によってはオブジェクト or 配列で返る。
-    // 両方に対応して name を取り出す。
-    const cat = Array.isArray(d.document_categories)
-      ? d.document_categories[0] ?? null
-      : d.document_categories;
-    const rev = d.current_revision;
-    return {
-      id: d.id,
-      title: d.title,
-      management_number: d.management_number,
-      description: d.description,
-      category_id: d.category_id,
-      category_name: cat?.name ?? null,
-      management_division_id: d.management_division_id,
-      division_name: divisionMap.get(d.management_division_id) ?? null,
-      managed_from_revision_number: d.managed_from_revision_number,
-      current_revision_id: d.current_revision_id,
-      current_revision_number: rev?.revision_number ?? null,
-      file_url: getPublicUrl(rev?.file_path ?? null),
-      file_name: rev?.file_name ?? null,
-      file_type: rev?.file_type ?? null,
-      created_at: d.created_at,
-      revised_at: rev?.created_at ?? null,
-    };
-  });
-
-  return rows;
+  return rows.map((row): DocumentListRow => ({
+    id: row.id,
+    title: row.title,
+    management_number: row.management_number,
+    description: row.description,
+    category_id: row.category_id,
+    category_name: row.category_name,
+    management_division_id: row.management_division_id,
+    division_name: divisionMap.get(row.management_division_id) ?? null,
+    managed_from_revision_number: row.managed_from_revision_number,
+    current_revision_id: row.current_revision_id,
+    current_revision_number: row.current_revision_number,
+    file_url: getPublicUrl(row.current_file_path),
+    file_name: row.current_file_name,
+    file_type: row.current_file_type as DocumentFileType | null,
+    created_at: row.created_at,
+    revised_at: row.revised_at,
+  }));
 };
 
 // ─────────────────────────────────────────────
@@ -164,56 +145,73 @@ export const getDocumentList = async (): Promise<DocumentListRow[]> => {
 export const getDocumentDetail = async (
   documentId: number
 ): Promise<DocumentDetailData | null> => {
-  // 本体取得
-  const { data: doc, error: docErr } = await supabase
-    .from("documents")
-    .select(
-      `
-        id,
-        title,
-        management_number,
-        description,
-        category_id,
-        management_division_id,
-        managed_from_revision_number,
-        current_revision_id,
-        created_at,
-        document_categories:category_id ( id, name )
-      `
-    )
-    .eq("id", documentId)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (docErr) {
-    console.error("[getDocumentDetail] 書類取得失敗:", docErr.message);
+  let docRows;
+  try {
+    docRows = await db
+      .select({
+        id: documents.id,
+        title: documents.title,
+        management_number: documents.managementNumber,
+        description: documents.description,
+        category_id: documents.categoryId,
+        management_division_id: documents.managementDivisionId,
+        managed_from_revision_number: documents.managedFromRevisionNumber,
+        current_revision_id: documents.currentRevisionId,
+        created_at: documents.createdAt,
+        category_name: documentCategories.name,
+      })
+      .from(documents)
+      .leftJoin(documentCategories, eq(documents.categoryId, documentCategories.id))
+      .where(and(eq(documents.id, documentId), isNull(documents.deletedAt)))
+      .limit(1);
+  } catch (error) {
+    console.error(
+      "[getDocumentDetail] 書類取得失敗:",
+      error instanceof Error ? error.message : "不明なエラー"
+    );
     return null;
   }
+  const doc = docRows[0];
   if (!doc) return null;
 
-  // 改版履歴（新しい順）
-  const { data: revs, error: revErr } = await supabase
-    .from("revisions")
-    .select("*")
-    .eq("document_id", documentId)
-    .is("deleted_at", null)
-    .order("revision_number", { ascending: false });
-
-  if (revErr) {
-    console.error("[getDocumentDetail] 改版取得失敗:", revErr.message);
+  let revisionsRows;
+  try {
+    revisionsRows = await db
+      .select({
+        id: revisions.id,
+        document_id: revisions.documentId,
+        revision_number: revisions.revisionNumber,
+        file_path: revisions.filePath,
+        file_name: revisions.fileName,
+        file_type: revisions.fileType,
+        file_size: revisions.fileSize,
+        notes: revisions.notes,
+        created_at: revisions.createdAt,
+        created_by: revisions.createdBy,
+        updated_at: revisions.updatedAt,
+        updated_by: revisions.updatedBy,
+        deleted_at: revisions.deletedAt,
+        deleted_by: revisions.deletedBy,
+      })
+      .from(revisions)
+      .where(and(eq(revisions.documentId, documentId), isNull(revisions.deletedAt)))
+      .orderBy(desc(revisions.revisionNumber));
+  } catch (error) {
+    console.error(
+      "[getDocumentDetail] 改版取得失敗:",
+      error instanceof Error ? error.message : "不明なエラー"
+    );
     return null;
   }
 
-  const revisions = (revs ?? []) as RevisionRecord[];
+  const revisionRecords: RevisionRecord[] = revisionsRows.map((revision) => ({
+    ...revision,
+    file_type: revision.file_type as DocumentFileType,
+  }));
   const currentRev =
-    revisions.find((r) => r.id === doc.current_revision_id) ??
-    revisions[0] ??
+    revisionRecords.find((revision) => revision.id === doc.current_revision_id) ??
+    revisionRecords[0] ??
     null;
-
-  // categoryは relationship 設定によってはオブジェクト or 配列で返るためここで安全に処理
-  const cat = Array.isArray(doc.document_categories)
-    ? doc.document_categories[0] ?? null
-    : (doc.document_categories as { id: number; name: string } | null);
 
   const divisionMap = await buildDivisionMap();
 
@@ -223,7 +221,7 @@ export const getDocumentDetail = async (
     management_number: doc.management_number,
     description: doc.description,
     category_id: doc.category_id,
-    category_name: cat?.name ?? null,
+    category_name: doc.category_name,
     management_division_id: doc.management_division_id,
     division_name: divisionMap.get(doc.management_division_id) ?? null,
     managed_from_revision_number: doc.managed_from_revision_number,
@@ -234,7 +232,7 @@ export const getDocumentDetail = async (
     file_type: currentRev?.file_type ?? null,
     created_at: doc.created_at,
     revised_at: currentRev?.created_at ?? null,
-    revisions,
+    revisions: revisionRecords,
   };
 };
 
@@ -247,7 +245,7 @@ export const getDocumentPublicUrl = (path: string | null): string | null => {
 
 // MIMEタイプ推定（ダウンロードレスポンス用）
 const contentTypeFromFile = (
-  fileType: DocumentFileType,
+  fileType: string,
   fileName: string
 ): string => {
   const lower = fileName.toLowerCase();
@@ -273,35 +271,31 @@ const contentTypeFromFile = (
 export const getDocumentDownloadData = async (
   documentId: number
 ): Promise<{ buffer: ArrayBuffer; fileName: string; contentType: string } | null> => {
-  const { data: doc, error: docErr } = await supabase
-    .from("documents")
-    .select(
-      `
-        id,
-        current_revision_id,
-        current_revision:current_revision_id (
-          file_path,
-          file_name,
-          file_type
-        )
-      `
-    )
-    .eq("id", documentId)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (docErr || !doc) {
-    console.error("[getDocumentDownloadData] 書類取得失敗:", docErr?.message);
+  let rows;
+  try {
+    rows = await db
+      .select({
+        file_path: revisions.filePath,
+        file_name: revisions.fileName,
+        file_type: revisions.fileType,
+      })
+      .from(documents)
+      .leftJoin(revisions, eq(documents.currentRevisionId, revisions.id))
+      .where(and(eq(documents.id, documentId), isNull(documents.deletedAt)))
+      .limit(1);
+  } catch (error) {
+    console.error(
+      "[getDocumentDownloadData] 書類取得失敗:",
+      error instanceof Error ? error.message : "不明なエラー"
+    );
     return null;
   }
 
-  const rev = Array.isArray(doc.current_revision)
-    ? doc.current_revision[0] ?? null
-    : doc.current_revision;
+  const rev = rows[0];
 
   if (!rev?.file_path) return null;
 
-  const { data: blob, error: dlErr } = await supabaseAdmin.storage
+  const { data: blob, error: dlErr } = await supabase.storage
     .from(BUCKET)
     .download(rev.file_path);
 
@@ -311,7 +305,7 @@ export const getDocumentDownloadData = async (
   }
 
   const fileName = rev.file_name ?? "download";
-  const fileType = (rev.file_type ?? "pdf") as DocumentFileType;
+  const fileType = rev.file_type ?? "pdf";
 
   return {
     buffer: await blob.arrayBuffer(),

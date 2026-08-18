@@ -1,41 +1,20 @@
 import "server-only";
-//import { supabase } from "@/lib/supabase";
-// 全部署一覧取得（論理削除されていないもの）
-export async function getAllDivisions() {
-  const apiUrl = process.env.USER_MANAGEMENT_API_URL_DIVISIONS;
-  const apiKey = process.env.USER_MANAGEMENT_DB_KEY;
-  
-  if (!apiUrl || !apiKey) {
-    console.warn("[withAuth] USER_MANAGEMENT_API_URL_DIVISIONS/KEY 未設定のためスキップ");
-  } 
-  else {
-    try {
-      //APIURLをenvに書いて部署情報をフェッチで取得。
-      // 部署取得API
-      const res = await fetch(`${apiUrl}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          // APIキー
-          Authorization: `Bearer ${apiKey}`,
-        },
-        cache: "no-store",
-      });
+import { cache } from "react";
+import { fetchExternalApiJson, ExternalApiError } from "@/server/externalApi";
+import type { DivisionInfo } from "@/types/interface";
 
-      if (!res.ok) {
-        throw new Error("部署一覧APIの取得に失敗しました");
-      }
-      const divisions = await res.json();
-
-      if (!divisions.data || !Array.isArray(divisions.data)) {
-        throw new Error("部署データが見つかりませんでした。");
-      }
-
-      return divisions.data;
-
-    } catch (e) {
-      console.warn("[withAuth] user mgmt API failed:", e);
-      throw e;
+export const getAllDivisions = cache(async (): Promise<DivisionInfo[]> => {
+  try {
+    const response = await fetchExternalApiJson(process.env.USER_MANAGEMENT_API_URL_DIVISIONS, process.env.USER_MANAGEMENT_DB_KEY);
+    if (typeof response !== "object" || response === null || !("data" in response) || !Array.isArray(response.data)) {
+      throw new ExternalApiError("invalid_response");
     }
+    return response.data as DivisionInfo[];
+  } catch (error) {
+    if (error instanceof ExternalApiError) {
+      console.warn("[getAllDivisions] division API unavailable:", error.kind);
+      throw new Error("部署情報を取得できませんでした。時間をおいて再度お試しください。");
+    }
+    throw error;
   }
-}
+});

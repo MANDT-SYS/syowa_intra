@@ -186,14 +186,14 @@
         -- documents.current_revision_id → revisions.id
         -- ============================================================
 
-        ALTER TABLE documents
-            ADD CONSTRAINT fk_documents_current_revision
-            FOREIGN KEY (current_revision_id)
-            REFERENCES revisions(id)
-            ON DELETE SET NULL;
+        -- ALTER TABLE documents
+        --     ADD CONSTRAINT fk_documents_current_revision
+        --     FOREIGN KEY (current_revision_id)
+        --     REFERENCES revisions(id)
+        --     ON DELETE SET NULL;
 
-        COMMENT ON CONSTRAINT fk_documents_current_revision ON documents
-            IS 'documents.current_revision_id → revisions.id への外部キー。版削除時はNULLにリセット';
+        -- COMMENT ON CONSTRAINT fk_documents_current_revision ON documents
+        --     IS 'documents.current_revision_id → revisions.id への外部キー。版削除時はNULLにリセット';
 
 
         -- ============================================================
@@ -365,3 +365,68 @@
 
 
         
+
+-- ============================================================================
+-- Phase 5B: 権限マスター（Supabase SQL Editor適用済み・実DB定義）
+-- ============================================================================
+-- 判定: user_id = 0 は DEVELOPER（DBレコード不要）、有効な authority_user が
+-- ある利用者は AUTHORIZED_USER、それ以外は GENERAL（DBレコード不要）。
+-- authority_user.user_id は外部ユーザーAPIの UserInfo.userId を保持するため、
+-- 負数を含む signed safe integer を許容する。0 は DEVELOPER本人専用の特別値であり、
+-- authority_user には割り当てない。
+-- ローカルユーザーテーブルへの外部キーは設定しない。
+
+CREATE TABLE authority_master (
+    authority_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    authority_name TEXT NOT NULL,
+    authority_code TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    created_by BIGINT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_by BIGINT NOT NULL,
+    deleted_at TIMESTAMP,
+    deleted_by BIGINT
+);
+
+CREATE UNIQUE INDEX uq_authority_code_active
+    ON authority_master (authority_code)
+    WHERE deleted_at IS NULL;
+
+-- DEVELOPER と GENERAL はDBへ登録しない。初期マスターは権限者のみ。
+INSERT INTO authority_master (
+    authority_name,
+    authority_code,
+    created_by,
+    updated_by
+)
+VALUES (
+    '権限者',
+    'AUTHORIZED_USER',
+    0,
+    0
+);
+
+CREATE TABLE authority_user (
+    authority_user_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    authority_id BIGINT NOT NULL REFERENCES authority_master(authority_id),
+    user_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    created_by BIGINT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_by BIGINT NOT NULL,
+    deleted_at TIMESTAMP,
+    deleted_by BIGINT
+);
+
+CREATE UNIQUE INDEX uq_authority_user_active
+    ON authority_user (user_id)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX ix_authority_user_authority_active
+    ON authority_user (authority_id)
+    WHERE deleted_at IS NULL;
+
+-- 初期投入済みデータ: authority_name = 権限者、authority_code = AUTHORIZED_USER、
+-- created_by = 0、updated_by = 0。created_at / updated_at は DEFAULT now()。
+-- 権限者から一般へ戻すときは authority_user を論理削除する。
+-- システム開発者（user_id = 0）は authority_user へ割り当てない。

@@ -178,7 +178,7 @@ const shortcuts = [
   // { icon: FileText, label: "各種申請",   href: "/forms"      },
    { icon: BookOpen, label: "書類管理", href: "/document"       },
    { icon: FileText, label: "管理画面", href: "/management"       },
-  // { icon: Calendar, label: "社内カレンダー",       href: "/calendar" },
+   { icon: Calendar, label: "社内カレンダー",       href: "/calendar" },
   // { icon: Heart,    label: "福利厚生",   href: "/benefits"   },
   // { icon: Users,    label: "社員検索",   href: "/members"    },
 ] as const;
@@ -201,7 +201,6 @@ const toneStyles: Record<Tone, string> = {
 
 export default async function HomePage() {
     const session = await auth0.getSession();
-    console.log(session);
   
   // セッションがない場合、ログイン前画面（サインアップとログインボタン）を表示
   if (!session?.user) {
