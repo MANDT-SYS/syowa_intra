@@ -56,6 +56,7 @@ export const getActiveCategories = async (): Promise<DocumentCategory[]> => {
         id: documentCategories.id,
         name: documentCategories.name,
         display_order: documentCategories.displayOrder,
+        activeFlag: documentCategories.activeFlag,
         created_at: documentCategories.createdAt,
         created_by: documentCategories.createdBy,
         updated_at: documentCategories.updatedAt,
@@ -64,7 +65,7 @@ export const getActiveCategories = async (): Promise<DocumentCategory[]> => {
         deleted_by: documentCategories.deletedBy,
       })
       .from(documentCategories)
-      .where(isNull(documentCategories.deletedAt))
+      .where(and(isNull(documentCategories.deletedAt), eq(documentCategories.activeFlag, true)))
       .orderBy(asc(documentCategories.displayOrder));
   } catch (error) {
     console.error(
@@ -97,6 +98,7 @@ export const getDocumentList = async (): Promise<DocumentListRow[]> => {
         current_revision_id: documents.currentRevisionId,
         created_at: documents.createdAt,
         category_name: documentCategories.name,
+        category_active_flag: documentCategories.activeFlag,
         current_revision_number: revisions.revisionNumber,
         current_file_path: revisions.filePath,
         current_file_name: revisions.fileName,
@@ -159,6 +161,7 @@ export const getDocumentDetail = async (
         current_revision_id: documents.currentRevisionId,
         created_at: documents.createdAt,
         category_name: documentCategories.name,
+        category_active_flag: documentCategories.activeFlag,
       })
       .from(documents)
       .leftJoin(documentCategories, eq(documents.categoryId, documentCategories.id))
@@ -232,6 +235,7 @@ export const getDocumentDetail = async (
     file_type: currentRev?.file_type ?? null,
     created_at: doc.created_at,
     revised_at: currentRev?.created_at ?? null,
+    category_active_flag: doc.category_active_flag,
     revisions: revisionRecords,
   };
 };

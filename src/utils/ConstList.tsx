@@ -17,5 +17,6 @@ export const ConstList = {
   //色
   RED_COLOR: '#86171F',
   ORANGE_COLOR: '#D88C1F',
+  GRAY_COLOR: '#888780',
 
 };

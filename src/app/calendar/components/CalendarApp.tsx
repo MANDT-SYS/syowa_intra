@@ -3,10 +3,15 @@
 "use client";
 
 import { useState } from "react";
+import Box from "@mui/material/Box";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormControl from "@mui/material/FormControl";
+import Stack from "@mui/material/Stack";
 import Button from "@/components/elements/Button";
+import EmptyState from "@/components/elements/EmptyState";
+import PrimaryActionButton from "@/components/elements/PrimaryActionButton";
+import ResultDialog from "@/components/elements/ResultDialog";
 import CalendarDialog from "@/app/calendar/components/CalendarDialog";
 import {
   fetchCalendarsAction,//カレンダー一覧取得
@@ -19,9 +24,10 @@ import type { CalendarWithUrl } from "@/app/calendar/actions";
 //Props型: コンポーネントが受け取るプロパティの型定義
 type Props = {
   initialCalendars: CalendarWithUrl[];//初期カレンダー一覧
+  canManageCalendars: boolean;
 };
 
-export default function CalendarApp({ initialCalendars }: Props) {
+export default function CalendarApp({ initialCalendars, canManageCalendars }: Props) {
   // カレンダー一覧の状態を管理するstate。初期値はpropsで受け取ったinitialCalendars（最新カレンダー）
   const [calendars, setCalendars] = useState<CalendarWithUrl[]>(initialCalendars);
 
@@ -38,6 +44,7 @@ export default function CalendarApp({ initialCalendars }: Props) {
 
   // エラーメッセージ表示用state。エラー発生時に内容をセット
   const [errorMessage, setErrorMessage] = useState("");
+  const [resultMessage, setResultMessage] = useState("");
 
   // 直前に受け取ったinitialCalendarsを保持し、propsの変更を検知してstateを更新するためのstate
   const [prevInitial, setPrevInitial] = useState(initialCalendars);
@@ -77,7 +84,8 @@ export default function CalendarApp({ initialCalendars }: Props) {
     setErrorMessage("");
     try {
       const savedYear = Number(formData.get("year"));
-      if (formData.get("id")) {
+      const isUpdate = Boolean(formData.get("id"));
+      if (isUpdate) {
         await updateCalendarAction(formData);
       } else {
         await addCalendarAction(formData);
@@ -87,6 +95,7 @@ export default function CalendarApp({ initialCalendars }: Props) {
       if (savedYear) {
         setSelectedYear(savedYear);
       }
+      setResultMessage(isUpdate ? "更新が完了しました。" : "登録が完了しました。");
     } catch (e) {
       if (e instanceof Error) {
         setErrorMessage(e.message);
@@ -105,6 +114,7 @@ export default function CalendarApp({ initialCalendars }: Props) {
         return;
       }
       await refreshData();
+      setResultMessage("削除が完了しました。");
     } catch (e) {
       if (e instanceof Error) {
         setErrorMessage(e.message);
@@ -114,18 +124,17 @@ export default function CalendarApp({ initialCalendars }: Props) {
   };
 
   return (
-    <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto", padding: "16px" }}>
+    <Box sx={{ width: "100%", maxWidth: "1200px", mx: "auto", p: { xs: 1.5, sm: 2 } }}>
       {/* ヘッダー行 */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "12px",
-        }}
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "stretch", sm: "center" }}
+        spacing={1.5}
+        sx={{ mb: 1.5 }}
       >
         {/* 年セレクトボックス */}
-        <FormControl size="small" sx={{ minWidth: 140 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 140 } }}>
           <Select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
@@ -148,19 +157,23 @@ export default function CalendarApp({ initialCalendars }: Props) {
      
         </FormControl>
 
-        <div style={{ display: "flex", gap: 8 }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1}
+          sx={{ width: { xs: "100%", sm: "auto" }, "& > button": { width: { xs: "100%", sm: "auto" } } }}
+        >
           {/* 新規追加ボタン */}
-          <Button onClick={() => { setModalMode("new"); setModalOpen(true); }}>
+          <PrimaryActionButton onClick={() => { setModalMode("new"); setModalOpen(true); }}>
             新規追加
-          </Button>
+          </PrimaryActionButton>
           {/* 編集ボタン */}
           {currentCalendar && (/* カレンダーデータが既に登録されている場合は、編集ボタンを表示 */
             <Button onClick={() => { setModalMode("edit"); setModalOpen(true); }}>
               編集
             </Button>
           )}
-        </div>
-      </div>
+        </Stack>
+      </Stack>
 
       {/* エラーメッセージ */}
       {errorMessage && (
@@ -186,34 +199,33 @@ export default function CalendarApp({ initialCalendars }: Props) {
       {/* サーバーからダウンロードして渡しているのではない */}
       {currentCalendar ? (
         // カレンダーが登録されている場合は、PDFビューアーを表示
-        <iframe
+        <Box
+          component="iframe"
           src={currentCalendar.pdfUrl}
           title={`${currentCalendar.year}年カレンダー`}
-          style={{
+          sx={{
             width: "100%",
-            height: "calc(100vh - 250px)",
+            height: { xs: "calc(100vh - 280px)", sm: "calc(100vh - 250px)" },
+            minHeight: { xs: 360, sm: 480 },
             border: "1px solid #ddd",
             borderRadius: "8px",
             backgroundColor: "#fff",
           }}
         />
       ) : (
-        // カレンダーが登録されていない場合は、デフォルトのメッセージを表示 
-        <div
-          style={{
+        // カレンダーが登録されていない場合は、Empty Stateを表示
+        <Box
+          sx={{
             width: "100%",
-            height: "calc(100vh - 250px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            height: { xs: "calc(100vh - 280px)", sm: "calc(100vh - 250px)" },
+            minHeight: { xs: 360, sm: 480 },
             border: "1px solid #ddd",
             borderRadius: "8px",
             backgroundColor: "#fff",
-            color: "#999",
           }}
         >
-          カレンダーが登録されていません
-        </div>
+          <EmptyState message="カレンダーが登録されていません" />
+        </Box>
       )}
 
       {/* 登録、編集ダイアログ */}
@@ -225,7 +237,13 @@ export default function CalendarApp({ initialCalendars }: Props) {
         current={modalMode === "edit" ? currentCalendar : null}
         existingYears={calendars.map((c) => c.year)}
         existingTitles={calendars.map((c) => c.title)}
+        canManageCalendars={canManageCalendars}
       />
-    </div>
+      <ResultDialog
+        open={Boolean(resultMessage)}
+        message={resultMessage}
+        onClose={() => setResultMessage("")}
+      />
+    </Box>
   );
 }

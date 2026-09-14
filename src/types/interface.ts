@@ -32,9 +32,20 @@ export type HeaderMenuItem = {
     userId: number;//ユーザーID
     familyName: string;//姓
     givenName: string;//名
+    email: string | null;//メールアドレス
     accountancyAuthorityId: number;//権限ID
     employmentStatusId: number;//雇用形態ID
     divisionId: number;//部門ID
+  };
+
+  // HeaderのプロフィールPopoverへ渡す表示専用データ
+  export type LoginUserProfile = {
+    userId: number;
+    userName: string;
+    email: string | null;
+    divisionNames: string[];
+    authorityLabel: string | null;
+    employmentStatusName: string | null;
   };
 
   //認証コンテキスト
@@ -59,6 +70,7 @@ export type HeaderMenuItem = {
     id: number;            // BIGSERIAL（1, 2, 3...）
     name: string;          // カテゴリ名
     display_order: number; // 表示順
+    activeFlag: boolean;
     created_at: string;
     created_by: number;
     updated_at: string;
@@ -134,7 +146,15 @@ export type HeaderMenuItem = {
 
   // 詳細表示用：上記 + 全版履歴
   export type DocumentDetailData = DocumentListRow & {
+    category_active_flag: boolean | null;
     revisions: RevisionRecord[];     // 改版履歴（新しい順）
+  };
+
+  // 雇用形態マスタ（外部API）
+  export type EmploymentStatus = {
+    id: number;
+    employmentStatus: string;
+    activate: number;
   };
 
   // 書類ファイルの種別（StorageのcontentTypeやプレビュー方法の分岐に使う）

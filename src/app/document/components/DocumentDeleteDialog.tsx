@@ -9,15 +9,8 @@
  */
 
 import * as React from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Typography,
-  Button as MuiButton,
-} from "@mui/material";
-import Button from "@/components/elements/Button";
+import { Typography } from "@mui/material";
+import ConfirmDialog from "@/components/elements/ConfirmDialog";
 import { removeDocumentAction } from "@/app/document/actions";
 import { useRouter } from "next/navigation";
 
@@ -73,42 +66,24 @@ export default function DocumentDeleteDialog({
   };
 
   return (
-    <Dialog
+    <ConfirmDialog
       open={open}
       onClose={onClose}
-      maxWidth="xs"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: 3, bgcolor: "#FAF6EF", border: "1px solid #E5E2DC" },
-      }}
+      onConfirm={handleDelete}
+      title="削除"
+      message={`「${documentTitle}」を本当に削除してよろしいですか？`}
+      confirmLabel="削除"
+      loadingConfirmLabel="削除中..."
+      loading={submitting}
     >
-      <DialogTitle sx={{ pb: 0.5, fontWeight: 700, color: "#2C2C2A" }}>
-        削除
-      </DialogTitle>
-      <Typography variant="body2" sx={{ px: 3, color: "#5F5E5A" }}>
-        「{documentTitle}」を本当に削除してよろしいですか？
+      <Typography variant="caption" sx={{ display: "block", color: "#888780" }}>
+        ※ 削除しても履歴上は残ります（論理削除）。
       </Typography>
-
-      <DialogContent sx={{ pt: 2 }}>
-        <Typography variant="caption" sx={{ color: "#888780" }}>
-          ※ 削除しても履歴上は残ります（論理削除）。
+      {error && (
+        <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+          {error}
         </Typography>
-
-        {error && (
-          <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-            {error}
-          </Typography>
-        )}
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 2, justifyContent: "flex-end", gap: 1 }}>
-        <MuiButton onClick={onClose} disabled={submitting} sx={{ color: "#5F5E5A" }}>
-          キャンセル
-        </MuiButton>
-        <Button onClick={handleDelete} disabled={submitting}>
-          {submitting ? "削除中..." : "削除"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+      )}
+    </ConfirmDialog>
   );
 }

@@ -20,7 +20,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Box,
-  Chip,
   IconButton,
   InputAdornment,
   MenuItem,
@@ -30,18 +29,22 @@ import {
   TextField,
   Tooltip,
   Typography,
-  Button as MuiButton,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import AddIcon from "@mui/icons-material/Add";
 import DownloadIcon from "@mui/icons-material/Download";
 import DescriptionIcon from "@mui/icons-material/Description";
-import CategoryIcon from "@mui/icons-material/Category";
 import DocumentAddDialog from "@/app/document/components/DocumentAddDialog";
+import PrimaryActionButton from "@/components/elements/PrimaryActionButton";
+import CategoryChip from "@/components/elements/CategoryChip";
+import ResultDialog from "@/components/elements/ResultDialog";
 import type { DivisionInfo, DocumentCategory, DocumentListRow } from "@/types/interface";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import { jaJP } from "@mui/x-data-grid/locales";
+import {
+  commonDataGridProps,
+  createCommonDataGridSx,
+} from "@/components/elements/dataGridConfig";
 
 
 type Props = {
@@ -59,15 +62,6 @@ const formatDate = (iso: string | null): string => {
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
 };
 
-// カテゴリチップの色（カテゴリ名ごとに見た目を変えると見やすいので軽くハッシュ）
-const categoryChipColor = (name: string | null): string => {
-  if (!name) return "#EFEAE0";
-  const palette = ["#E8C8B0", "#CFE0E8", "#D8E8C8", "#EAD8E8", "#E8E1B6"];
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return palette[h % palette.length];
-};
-
 export default function DocumentApp({
   initialDocuments,//書類一覧
   categories,//カテゴリー一覧
@@ -81,6 +75,7 @@ export default function DocumentApp({
 
   // 登録ダイアログ開閉
   const [addOpen, setAddOpen] = React.useState(false);
+  const [resultMessage, setResultMessage] = React.useState("");
 
   // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
   // ★★★検索 & フィルター適用後の行（キーワード未指定時は全件該当）★★★
@@ -141,66 +136,8 @@ export default function DocumentApp({
       ),
     },
     {
-      field: "management_number",
-      headerName: "管理番号",
-      flex: 0.8,
-      minWidth: 120,
-    },
-    {
-      field: "title",
-      headerName: "書類名",
-      flex: 1.4,
-      minWidth: 200,
-      renderCell: (p) => (
-        <Typography variant="body2" sx={{ fontWeight: 700, color: "#2C2C2A" }}>
-          {p.value as string}
-        </Typography>
-      ),
-    },
-    {
-      field: "division_name",
-      headerName: "立案部署",
-      flex: 0.9,
-      minWidth: 120,
-      renderCell: (p) => (p.value as string | null) ?? <span style={{ color: "#aaa" }}>—</span>,
-    },
-    {
-      field: "category_name",
-      headerName: "カテゴリ",
-      flex: 0.7,
-      minWidth: 110,
-      renderCell: (p) => {
-        const name = (p.value as string | null) ?? null;
-        if (!name) return <span style={{ color: "#aaa" }}>—</span>;
-        return (
-          <Chip
-            label={name}
-            size="small"
-            sx={{
-              bgcolor: categoryChipColor(name),
-              color: "#5F4A2A",
-              fontWeight: 600,
-              borderRadius: "999px",
-            }}
-          />
-        );
-      },
-    },
-    {
-      field: "created_at",
-      headerName: "登録日",
-      width: 120,
-      renderCell: (p) => formatDate(p.value as string),
-    },
-    {
-      field: "revised_at",
-      headerName: "改版日",
-      width: 120,
-      renderCell: (p) => formatDate(p.value as string | null),
-    },
-    {
       field: "actions",
-      headerName: "",
+      headerName: "DL  /  詳細",
       width: 110,
       sortable: false,
       filterable: false,
@@ -239,6 +176,55 @@ export default function DocumentApp({
         );
       },
     },
+    {
+      field: "management_number",
+      headerName: "管理番号",
+      flex: 0.8,
+      minWidth: 120,
+    },
+    {
+      field: "title",
+      headerName: "書類名",
+      flex: 1.4,
+      minWidth: 200,
+      renderCell: (p) => (
+        <Typography variant="body2" sx={{ fontWeight: 700, color: "#2C2C2A" }}>
+          {p.value as string}
+        </Typography>
+      ),
+    },
+    {
+      field: "category_name",
+      headerName: "カテゴリ",
+      flex: 0.7,
+      minWidth: 110,
+      renderCell: (p) => {
+        const name = (p.value as string | null) ?? null;
+        if (!name) return <span style={{ color: "#aaa" }}>—</span>;
+        return <CategoryChip name={name} />;
+      },
+    },
+    {
+      field: "division_name",
+      headerName: "立案部署",
+      flex: 0.9,
+      minWidth: 120,
+      renderCell: (p) => (p.value as string | null) ?? <span style={{ color: "#aaa" }}>—</span>,
+    },
+   
+    {
+      field: "created_at",
+      headerName: "登録日",
+      width: 120,
+      renderCell: (p) => formatDate(p.value as string),
+    },
+    {
+      field: "revised_at",
+      headerName: "改版日",
+      width: 120,
+      renderCell: (p) => formatDate(p.value as string | null),
+    },
+    
   ];
 
   return (
@@ -328,35 +314,19 @@ export default function DocumentApp({
           </Select> */}
 
           {/* カテゴリ追加（管理画面の書類管理アコーディオンへ） */}
-          <MuiButton
-            component={Link}
+          {/* <SecondaryNavigationLink
             href="/management"
-            startIcon={<CategoryIcon />}
-            variant="outlined"
-            sx={{
-              borderColor: "#C7C2B8",
-              color: "#5F5E5A",
-              bgcolor: "#fff",
-              "&:hover": { bgcolor: "#F1ECE3", borderColor: "#86171F" },
-            }}
           >
             カテゴリ追加
-          </MuiButton>
+          </SecondaryNavigationLink> */}
 
           {/* 新規追加 */}
-          <MuiButton
-            variant="outlined"
+          <PrimaryActionButton
             startIcon={<AddIcon />}
             onClick={() => setAddOpen(true)}
-            sx={{
-              borderColor: "#86171F",
-              color: "#86171F",
-              bgcolor: "#fff",
-              "&:hover": { bgcolor: "#86171F", color: "#fff" },
-            }}
           >
             新規追加
-          </MuiButton>
+          </PrimaryActionButton>
         </Stack>
       </Stack>
 
@@ -364,61 +334,13 @@ export default function DocumentApp({
       <Box
         sx={{
           width: "100%",
-          // ヘッダー＆セルのデザインを画像に合わせて柔らかい印象に
-          "& .MuiDataGrid-root": {
-            border: "none",
-            bgcolor: "transparent",
-          },
-          "& .MuiDataGrid-columnHeaders": {
-            bgcolor: "#F1ECE3",
-            borderBottom: "1px solid #E5E2DC",
-          },
-          "& .MuiDataGrid-columnHeaderTitle": {
-            fontWeight: 700,
-            color: "#5F5E5A",
-          },
-          "& .MuiDataGrid-cell": {
-            borderBottom: "1px solid #EDEAE2",
-          },
-          "& .MuiDataGrid-row:hover": {
-            bgcolor: "rgba(134,23,31,0.04)",
-          },
-          "& .MuiDataGrid-footerContainer": {
-            borderTop: "1px solid #E5E2DC",
-          },
         }}
       >
         <DataGrid
-          autoHeight
+          {...commonDataGridProps}
           rows={gridRows}
           columns={columns}
-          localeText={{
-            ...jaJP.components.MuiDataGrid.defaultProps.localeText,
-            noRowsLabel: "データがありません",
-            toolbarDensity: "表示行数",
-            footerRowSelected: (count) => `${count.toLocaleString()} 行選択中`,
-            footerTotalRows: "全体の行数:",
-            paginationRowsPerPage: "ページあたりの行数",
-            // MuiTablePagination: {
-            //   labelRowsPerPage: "ページあたりの行数",
-            //   labelDisplayedRows: ({ from, to, count }: { from: number; to: number; count: number }) =>
-            //     `${from.toLocaleString()}〜${to.toLocaleString()}件目 / 全${count !== -1 ? count.toLocaleString() : `より多くの`}件`,
-            // },
-            // MuiTablePagination: {
-            //   labelRowsPerPage: "ページあたりの行数",
-            //   labelDisplayedRows: ({ from, to, count }: { from: number; to: number; count: number }) =>
-            //     `${from.toLocaleString()}〜${to.toLocaleString()}件目 / 全${count !== -1 ? count.toLocaleString() : `より多くの`}件`,
-            // },
-          }}
-          disableRowSelectionOnClick
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10, page: 0 } },
-          }}
-          getRowHeight={() => "auto"}
-          sx={{
-            "& .MuiDataGrid-cell": { py: 1.5 },
-          }}
+          sx={createCommonDataGridSx({ cellPaddingY: 1.5 })}
         />
       </Box>
 
@@ -429,9 +351,15 @@ export default function DocumentApp({
         onSaved={() => {
           // サーバー側で revalidatePath 済みだが、念のため最新を再取得
           router.refresh();
+          setResultMessage("登録が完了しました。");
         }}
         categories={categories}
         divisions={divisions}
+      />
+      <ResultDialog
+        open={Boolean(resultMessage)}
+        message={resultMessage}
+        onClose={() => setResultMessage("")}
       />
       </Box>
     // </Paper>

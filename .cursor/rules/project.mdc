@@ -4,6 +4,18 @@ globs: **/*
 alwaysApply: true
 ---
 
+# UI通知
+- 操作成功の通知にはSnackbarを使用せず、共通の`ResultDialog`を使用する。処理前の削除・状態変更・権限変更確認には共通の`ConfirmDialog`を使用し、入力検証・操作失敗・権限不足・予期しない全体エラーの表示は、それぞれ既存のUI方式を維持する。
+
+# DataGrid
+- DataGridの共通化は、表示style・locale・pagination等の業務非依存設定に限定する。columns、rows、getRowId、検索、filter、action列は各機能側に保持する。
+
+# Loading UI
+- ページ遷移・主要データ取得中はRoute Segmentの`loading.tsx`によるSkeleton Loadingを基本とし、Skeleton表示のためにデータ取得方式や業務処理を変更しない。Loading、Empty、Error、Successは別の状態として扱う。Empty Stateは取得完了後に0件と確定した場合だけ表示し、ErrorをEmptyとして扱わない。
+
+# Empty State・Chip
+- Empty Stateは表示専用とし、データ件数判定・DB/API取得・permission判定を持たせない。Chipは万能Componentへ統合せず、Authority・Categoryなど意味単位で共通化し、権限・状態の判定やデータ取得を持たせない。
+
 # プロジェクト概要
 
 - 昭和産業向け社内イントラ。Next.js 16.2 / React 19 / TypeScript / MUI を使用し、Vercelへデプロイする。
@@ -21,6 +33,10 @@ alwaysApply: true
 - 外部APIには既存の10秒timeout・cache方針を適用し、無期限待機する`fetch`を追加しない。
 - Phase 5の認可は`getUserPermissions`と`assertCan*`へ集約する。DEVELOPERは`MASTER_AUTHORITY`で特定する開発者本人専用権限であり、DBから付与・解除しない。
 - DEVELOPERとAUTHORIZED_USERは権限設定を利用できる。認可は必ず`withAuth`で得たactorUserIdを用い、画面由来のtargetUserIdを認可判定へ使わない。
+- 管理系Server ActionはUI表示制御だけに依存せず、`withAuth`でactorUserIdを得た直後に対応する`assertCan*`を実行してから入力検証・DB・Storage処理へ進む。書類・カレンダー・カテゴリの削除は、それぞれ対応する`assertCanManage*`を通す。
+- Headerの管理画面導線は、Server Componentで`getUserPermissions`から得る`canAccessManagement`を正とする。Client ComponentへServer-onlyの認可関数をimportせず、`accountancyAuthorityId`や個別userId比較で新認可を実装しない。
+- Headerのプロフィールは独立`/my_page` Routeではなく、Serverで組み立てた表示専用データをPopoverへ渡す。ClientからuserIdを指定してプロフィールを再取得しない。
+- Pageで`AuthorizationError`を扱う場合は、Server側の`assertCan*`を維持したまま安全な権限不足UIへ変換する。`PermissionResolutionError`は権限不足と混同せず、内部情報を含まない確認失敗メッセージにする。Server Actionの想定される認可エラーは既存のResult型で安全なメッセージとして返す。
 
 # DB・Storage
 
@@ -41,6 +57,7 @@ alwaysApply: true
 - DBのbigint物理列は維持し、Drizzleでは対象ID・外部キーを`mode: "number"`で扱う。書類・カテゴリ・revision等のDB内部数値IDは`parsePositiveSafeInteger`、calendar UUIDは`parseUuid`で検証する。外部`UserInfo.userId`は負数を含むsafe integerを取り得るため、権限設定の対象IDは`parseExternalUserId`で検証する。`ConstList.MASTER_AUTHORITY`（現在は`0`）だけはDEVELOPER本人として明示的に変更対象から除外する。
 - revisionの正式テーブル名は`revisions`。`document_revisions`を使わない。
 - documents・categoriesは論理削除し、通常取得は`deleted_at IS NULL`。削除対象0件は成功扱いにしない。書類削除ではrevisionsも論理削除し、Storage objectは残す。
+- カテゴリは`deleted_at IS NULL`と`active_flag`で有効・使用停止・論理削除を表す。新規書類・カテゴリ変更先は有効カテゴリだけを選択可能とし、既存書類は使用停止カテゴリ名を保持して表示する。有効な書類から使用中のカテゴリはServer側で論理削除を拒否する。使用停止・再有効化も`assertCanManageDocumentCategories`を通し、書類側のカテゴリ検証と行ロックで整合させる。
 - calendarはDB・Storageとも物理削除する。Storage削除にはDBから返された`storage_path`を使い、クライアント由来の推測pathを使わない。
 
 # Storage・アップロード
@@ -58,12 +75,12 @@ alwaysApply: true
 - `next/font/google`、Geist、Geist Monoは使用しない。build時のGoogle Fonts外部通信依存は撤去済み。
 - sans-serifは`Arial, Helvetica, sans-serif`、monospaceは`"Courier New", Courier, monospace`のsystem fontを使用する。
 - system font化後、`npm run lint`、`npx tsc --noEmit`、`npm run build`は成功確認済み。Google Fonts取得失敗によるproduction build未確認は解消済み。
-- `src/middleware.ts`の旧Middleware規約に関するdeprecated警告は残るが、production buildの失敗原因ではない。`proxy.ts`への移行は明示依頼なしに行わない。
+- Next.js 16のrequest boundaryは`src/proxy.ts`である。旧Middleware規約のdeprecated警告を理由に、matcher・Auth0・IP制限・CSPの挙動を無断変更しない。
 
 # Next.js・安全な作業
 
 - Next.jsに関係する実装前は、インストール済みNext.jsの`node_modules/next/dist/docs/`配下のローカル公式ドキュメントを確認する。旧バージョン知識だけでApp Router、Server Action、Route Handler、Middleware / Proxyを変更しない。
-- `src/middleware.ts`はAuth0、IP制限、CSP、matcherを担う。`src/app/middleware.ts`は削除済みであり、古い資料を根拠に復活させない。
+- `src/proxy.ts`はAuth0、IP制限、CSP、matcherを担う。`src/app/middleware.ts`は削除済みであり、古い資料を根拠に復活させない。
 - DB schema、migration、DDL、RLS、制約、index、sequence、実DB・Storage操作は明示承認なしに実行しない。SQLが必要なら、コマンド全文・SQL全文・使用環境変数・READ/WRITE・対象・影響・理由を先に提示する。
 - INSERT、UPDATE、DELETE、Storage upload・remove・move等の実操作は、通常のコード調査・実装と分け、明示承認なしに行わない。
 - `_reference/education_training/`は参照専用。アプリからimportせず、明示依頼なしに変更しない。lint / TypeScriptチェック対象外とし、`.git/info/exclude`の既存方針を維持する。

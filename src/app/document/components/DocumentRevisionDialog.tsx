@@ -11,14 +11,11 @@
 
 import * as React from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Typography,
   Button as MuiButton,
 } from "@mui/material";
 import Button from "@/components/elements/Button";
+import CommonDialog from "@/components/elements/CommonDialog";
 import DocumentDialogFields, {
   type DocumentFormValues,
 } from "@/app/document/components/DocumentDialogFields";
@@ -32,6 +29,7 @@ type Props = {
   onSaved: () => void;
   current: DocumentDetailData;
   categories: DocumentCategory[];
+  currentInactiveCategory?: { id: number; name: string } | null;
   divisions: DivisionInfo[];
 };
 
@@ -41,6 +39,7 @@ export default function DocumentRevisionDialog({
   onSaved,
   current,
   categories,
+  currentInactiveCategory,
   divisions,
 }: Props) {
   const [values, setValues] = React.useState<DocumentFormValues>({
@@ -137,30 +136,31 @@ export default function DocumentRevisionDialog({
   };
 
   return (
-    <Dialog
+    <CommonDialog
       open={open}
       onClose={onClose}
       maxWidth="sm"
-      fullWidth
-      TransitionProps={{ onEnter: handleEnter }}
-      PaperProps={{
-        sx: { borderRadius: 3, bgcolor: "#FAF6EF", border: "1px solid #E5E2DC" },
-      }}
+      transitionProps={{ onEnter: handleEnter }}
+      title="改版"
+      description="改版内容を入力し、改版ボタンを押してください。"
+      actions={
+        <>
+          <MuiButton onClick={onClose} disabled={submitting} sx={{ color: "#5F5E5A" }}>
+            キャンセル
+          </MuiButton>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? "改版中..." : "改版"}
+          </Button>
+        </>
+      }
     >
-      <DialogTitle sx={{ pb: 0.5, fontWeight: 700, color: "#2C2C2A" }}>
-        改版
-      </DialogTitle>
-      <Typography variant="body2" sx={{ px: 3, color: "#5F5E5A" }}>
-        改版内容を入力し、改版ボタンを押してください。
-      </Typography>
-
-      <DialogContent sx={{ pt: 2 }}>
         <DocumentDialogFields
           values={values}
           onChange={handleChange}
           file={file}
           onFileChange={setFile}
           categories={categories}
+          currentInactiveCategory={currentInactiveCategory}
           divisions={divisions}
           showNotes
           disabled={submitting}
@@ -172,16 +172,6 @@ export default function DocumentRevisionDialog({
             {error}
           </Typography>
         )}
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 2, justifyContent: "flex-end", gap: 1 }}>
-        <MuiButton onClick={onClose} disabled={submitting} sx={{ color: "#5F5E5A" }}>
-          キャンセル
-        </MuiButton>
-        <Button onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "改版中..." : "改版"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </CommonDialog>
   );
 }

@@ -1,23 +1,35 @@
-import React from 'react'
-import Box from '@/components/elements/Box'
+import { Box, Skeleton, Stack } from "@mui/material";
+import PageSkeleton from "@/components/elements/PageSkeleton";
 
-// 今風のおしゃれなローディングアニメーション
-const Loading: React.FC = () => {
-    return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5 mt-27">
-          <div className="flex items-center gap-3">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <span
-                key={i}
-                className="w-3 h-8 rounded bg-[#86171F] animate-bar-wave"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              />
-            ))}
-          </div>
-          <p className="text-xl text-gray-400 tracking-wide mt-4">読み込み中...</p>
-        </div>
-      );
+export default function Loading() {
+  return (
+    <PageSkeleton maxWidth={1152} label="ホーム画面を読み込んでいます">
+      <Skeleton variant="rounded" width="100%" height={360} sx={{ mb: 5 }} />
 
+      <Skeleton variant="text" width={120} height={32} sx={{ mb: 2 }} />
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+          gap: 2,
+          mb: 5,
+        }}
+      >
+        {Array.from({ length: 3 }, (_, index) => (
+          <Stack
+            key={index}
+            alignItems="center"
+            spacing={1.5}
+            sx={{ bgcolor: "#fff", borderRadius: 2, p: 3 }}
+          >
+            <Skeleton variant="rounded" width={56} height={56} />
+            <Skeleton variant="text" width="60%" height={28} />
+          </Stack>
+        ))}
+      </Box>
+
+      <Skeleton variant="text" width={100} height={32} sx={{ mb: 2 }} />
+      <Skeleton variant="rounded" width="100%" height={120} />
+    </PageSkeleton>
+  );
 }
-
-export default Loading;

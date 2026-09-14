@@ -6,6 +6,5 @@ export const breadcrumbsLabelMap: Record<string, string> = {
     test: "テスト",
     calendar: "カレンダー",
     management: "管理画面",
-    my_page: "マイページ",
     setting: "設定",
   };

@@ -9,17 +9,15 @@
 
 import * as React from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Typography,
-  TextField,
   Button as MuiButton,
   Box,
 } from "@mui/material";
 import CategoryIcon from "@mui/icons-material/Category";
 import Button from "@/components/elements/Button";
+import CommonDialog from "@/components/elements/CommonDialog";
+import FormFieldLabel from "@/components/elements/FormFieldLabel";
+import FormTextField from "@/components/elements/FormTextField";
 import { editCategoryAction } from "@/app/management/actions";
 import type { DocumentCategoryWithCount } from "@/types/interface";
 
@@ -70,33 +68,29 @@ export default function CategoryEditDialog({ open, onClose, onSaved, current }: 
   };
 
   return (
-    <Dialog
+    <CommonDialog
       open={open}
       onClose={onClose}
       maxWidth="xs"
-      fullWidth
-      TransitionProps={{ onEnter: handleEnter }}
-      PaperProps={{
-        sx: { borderRadius: 3, bgcolor: "#FAF6EF", border: "1px solid #E5E2DC" },
-      }}
+      transitionProps={{ onEnter: handleEnter }}
+      title="編集"
+      description="内容を変更し、編集ボタンを押してください。"
+      actions={
+        <>
+          <MuiButton onClick={onClose} disabled={submitting} sx={{ color: "#5F5E5A" }}>
+            キャンセル
+          </MuiButton>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? "更新中..." : "編集"}
+          </Button>
+        </>
+      }
     >
-      <DialogTitle sx={{ pb: 0.5, fontWeight: 700, color: "#2C2C2A" }}>
-        編集
-      </DialogTitle>
-      <Typography variant="body2" sx={{ px: 3, color: "#5F5E5A" }}>
-        内容を変更し、編集ボタンを押してください。
-      </Typography>
-
-      <DialogContent sx={{ pt: 2 }}>
         <Box>
-          <Typography
-            variant="caption"
-            sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "#86171F", fontWeight: 600, mb: 0.5 }}
-          >
-            <CategoryIcon sx={{ fontSize: 16 }} />
+          <FormFieldLabel icon={<CategoryIcon sx={{ fontSize: 16 }} />}>
             カテゴリ名
-          </Typography>
-          <TextField
+          </FormFieldLabel>
+          <FormTextField
             value={name}
             onChange={(e) => setName(e.target.value)}
             fullWidth
@@ -110,16 +104,6 @@ export default function CategoryEditDialog({ open, onClose, onSaved, current }: 
             {error}
           </Typography>
         )}
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 2, justifyContent: "flex-end", gap: 1 }}>
-        <MuiButton onClick={onClose} disabled={submitting} sx={{ color: "#5F5E5A" }}>
-          キャンセル
-        </MuiButton>
-        <Button onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "更新中..." : "編集"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </CommonDialog>
   );
 }

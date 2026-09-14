@@ -15,8 +15,12 @@ type Crumb = {
   isCurrent: boolean; // 現在地かどうか
 };
 
+type BreadcrumbsProps = {
+  currentLabel?: string;
+};
+
 // pathname から Crumb 配列を組み立てる
-function buildCrumbs(pathname: string): Crumb[] {
+function buildCrumbs(pathname: string, currentLabel?: string): Crumb[] {
   // 例: "/document/test" → ["document", "test"]
   const segments = pathname.split("/").filter(Boolean);
 
@@ -24,22 +28,29 @@ function buildCrumbs(pathname: string): Crumb[] {
     // この階層までのフルパス
     const href = "/" + segments.slice(0, i + 1).join("/");
     // マップに無いセグメントはそのまま表示（デコードしておく）
-    const label = breadcrumbsLabelMap[seg] ?? decodeURIComponent(seg);
+    const isCurrent = i === segments.length - 1;
+    const label =
+      isCurrent && currentLabel
+        ? currentLabel
+        : (breadcrumbsLabelMap[seg] ?? decodeURIComponent(seg));
     return {
       label,
       href,
-      isCurrent: i === segments.length - 1,
+      isCurrent,
     };
   });
 }
 
-export function Breadcrumbs() {
+export function Breadcrumbs({ currentLabel }: BreadcrumbsProps = {}) {
   const pathname = usePathname();
 
   // トップページではパンくずを出さない
   if (pathname === "/") return null;
 
-  const crumbs = buildCrumbs(pathname);
+  // 書類詳細では、詳細ページ側が取得済みの書類名を渡してパンくずを表示する。
+  if (!currentLabel && /^\/document\/\d+\/?$/.test(pathname)) return null;
+
+  const crumbs = buildCrumbs(pathname, currentLabel);
 
   return (
     <nav

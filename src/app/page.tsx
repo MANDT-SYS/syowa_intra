@@ -138,11 +138,6 @@
 // ----------------------------------------------------------------------------
 // 前提: Next.js 13+ App Router / TypeScript / Tailwind CSS / lucide-react
 // 設置先: app/page.tsx
-// フォント: app/layout.tsx で next/font を使って設定してください
-//   import { Noto_Sans_JP, Noto_Serif_JP } from "next/font/google";
-//   const sans  = Noto_Sans_JP({  subsets: ["latin"], variable: "--font-sans"  });
-//   const serif = Noto_Serif_JP({ subsets: ["latin"], variable: "--font-serif" });
-//   <body className={`${sans.variable} ${serif.variable} font-sans`}>
 // ============================================================================
 
 import Image from "next/image";

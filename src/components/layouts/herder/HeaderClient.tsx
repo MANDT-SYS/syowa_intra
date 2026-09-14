@@ -31,7 +31,7 @@ import CreateIcon from "@mui/icons-material/Create";//入力
 import SettingsIcon from "@mui/icons-material/Settings";//設定
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";//項目管理
 import InsertChartIcon from "@mui/icons-material/InsertChart";//オーダー検索集計
-import AccountCircle from "@mui/icons-material/AccountCircle";//マイページ
+import AccountCircle from "@mui/icons-material/AccountCircle";//プロフィール
 import CloseIcon from "@mui/icons-material/Close";//閉じる
 import LogoutIcon from "@mui/icons-material/Logout";//ログアウト
 import AccessTimeIcon from "@mui/icons-material/AccessTime";//時間外労働確認    
@@ -40,7 +40,8 @@ import AppsIcon from "@mui/icons-material/Apps";//アプリ
 
 //アプリリンク・メニュー項目
 import type { HeaderAppItem, HeaderMenuItem } from "@/types/interface";
-import { ConstList } from "@/utils/ConstList";
+import type { LoginUserProfile } from "@/types/interface";
+import UserInfoPopover from "./UserInfoPopover";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -49,10 +50,8 @@ type Props = {
   systemTitle: string;
   //デバッグローカル
   //debugLocal: boolean;
-  //ユーザーID
-  userId: number;
-  //ユーザー名
-  userName: string;
+  //プロフィール表示用データ
+  profile: LoginUserProfile;
   //メニュー項目
   menuItems: HeaderMenuItem[];
   //アプリリンク
@@ -86,8 +85,7 @@ function getMenuIcon(iconKey: string) {
 export default function HeaderClient({
   systemTitle,
   //debugLocal,
-  userId,
-  userName,
+  profile,
   menuItems,
   appLinks,
 }: Props) {
@@ -265,20 +263,12 @@ export default function HeaderClient({
         </div> */}
      
 
-            {/* ログインユーザー・マイページボタン */}
-            <IconButton
-              component={Link}
-              href="/my_page"
-              color="inherit"
-              size={isMobile ? "small" : "large"}
-            >
-              <AccountCircle />
-              {!isMobile && (
-                <Typography sx={{ ml: 1, fontSize: isTablet ? "1.05rem" : "1.2rem" }}>
-                  {userName}
-                </Typography>
-              )}
-            </IconButton>
+            {/* ログインユーザーのプロフィール */}
+            <UserInfoPopover
+              profile={profile}
+              isMobile={isMobile}
+              isTablet={isTablet}
+            />
 
             {/* 外部アプリリンクアイコン */}
             <IconButton

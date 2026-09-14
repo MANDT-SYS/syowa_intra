@@ -6,8 +6,6 @@ import "./globals.css";
 import MuiXLicense from "@/components/elements/MuiXLicense";
 import { Breadcrumbs } from "@/components/layouts/breadcrumbs/Breadcrumbs";
 
-// Googleフォント「Geist Sans」と「Geist Mono」をNext.jsに読み込むための設定。
-// それぞれフォント変数を設定して、latinサブセットを指定している。
 // Next.jsのSEO用メタデータ。ページのタイトルと説明を定義している。
 export const metadata: Metadata = {
   title: "Create Next App",

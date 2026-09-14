@@ -10,14 +10,11 @@
 
 import * as React from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Typography,
   Button as MuiButton,
 } from "@mui/material";
 import Button from "@/components/elements/Button";
+import CommonDialog from "@/components/elements/CommonDialog";
 import DocumentDialogFields, {
   type DocumentFormValues,
 } from "@/app/document/components/DocumentDialogFields";
@@ -115,24 +112,24 @@ export default function DocumentAddDialog({
   };
 
   return (
-    <Dialog
+    <CommonDialog
       open={open}
       onClose={onClose}
       maxWidth="sm"
-      fullWidth
-      TransitionProps={{ onEnter: handleEnter }}
-      PaperProps={{
-        sx: { borderRadius: 3, bgcolor: "#FAF6EF", border: "1px solid #E5E2DC" },
-      }}
+      transitionProps={{ onEnter: handleEnter }}
+      title="新規追加"
+      description="内容を入力し、追加ボタンを押してください。"
+      actions={
+        <>
+          <MuiButton onClick={onClose} disabled={submitting} sx={{ color: "#5F5E5A" }}>
+            キャンセル
+          </MuiButton>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? "追加中..." : "追加"}
+          </Button>
+        </>
+      }
     >
-      <DialogTitle sx={{ pb: 0.5, fontWeight: 700, color: "#2C2C2A" }}>
-        新規追加
-      </DialogTitle>
-      <Typography variant="body2" sx={{ px: 3, color: "#5F5E5A" }}>
-        内容を入力し、追加ボタンを押してください。
-      </Typography>
-
-      <DialogContent sx={{ pt: 2 }}>
         <DocumentDialogFields
           values={values}
           onChange={handleChange}
@@ -148,16 +145,6 @@ export default function DocumentAddDialog({
             {error}
           </Typography>
         )}
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 2, justifyContent: "flex-end", gap: 1 }}>
-        <MuiButton onClick={onClose} disabled={submitting} sx={{ color: "#5F5E5A" }}>
-          キャンセル
-        </MuiButton>
-        <Button onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "追加中..." : "追加"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </CommonDialog>
   );
 }

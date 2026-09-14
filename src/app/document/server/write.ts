@@ -2,7 +2,7 @@
 import "server-only";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
-import { documents, revisions } from "@/db/schema";
+import { documentCategories, documents, revisions } from "@/db/schema";
 import { sanitizeText } from "@/lib/sanitize";
 import { supabase } from "@/lib/supabase";
 import { assertFileSize } from "@/lib/fileSize";
@@ -35,6 +35,44 @@ const documentColumns = {
 const isPostgresError = (error: unknown, code: string): boolean =>
   typeof error === "object" && error !== null && "code" in error &&
   (error as { code?: unknown }).code === code;
+
+const CATEGORY_UNAVAILABLE_ERROR = "選択したカテゴリは現在利用できません。";
+
+const isCategoryUnavailableError = (error: unknown): boolean =>
+  error instanceof Error && error.message === CATEGORY_UNAVAILABLE_ERROR;
+
+/**
+ * 新規に選択するカテゴリは有効でなければならない。
+ * 既存書類が保持する使用停止カテゴリだけは、同じカテゴリを維持する場合に限る。
+ */
+const assertCategoryCanBeUsed = async (
+  tx: Pick<typeof db, "select">,
+  categoryId: number | null,
+  currentCategoryId: number | null = null
+): Promise<void> => {
+  if (categoryId === null) return;
+
+  const categoryCondition =
+    categoryId === currentCategoryId
+      ? and(
+          eq(documentCategories.id, categoryId),
+          isNull(documentCategories.deletedAt)
+        )
+      : and(
+          eq(documentCategories.id, categoryId),
+          isNull(documentCategories.deletedAt),
+          eq(documentCategories.activeFlag, true)
+        );
+
+  const [category] = await tx
+    .select({ id: documentCategories.id })
+    .from(documentCategories)
+    .where(categoryCondition)
+    .limit(1)
+    .for("key share");
+
+  if (!category) throw new Error(CATEGORY_UNAVAILABLE_ERROR);
+};
 
 const detectFileType = (file: File): DocumentFileType => {
   const lower = file.name.toLowerCase();
@@ -141,6 +179,8 @@ export const insertDocument = async (params: {
   let draft: { documentId: number; revisionId: number };
   try {
     draft = await db.transaction(async (tx) => {
+      await assertCategoryCanBeUsed(tx, categoryId);
+
       const [document] = await tx
         .insert(documents)
         .values({
@@ -228,7 +268,10 @@ export const updateDocument = async (params: {
   let currentRevisionId: number | null;
   try {
     const [currentDocument] = await db
-      .select({ currentRevisionId: documents.currentRevisionId })
+      .select({
+        currentRevisionId: documents.currentRevisionId,
+        categoryId: documents.categoryId,
+      })
       .from(documents)
       .where(and(eq(documents.id, documentId), isNull(documents.deletedAt)))
       .limit(1);
@@ -252,13 +295,25 @@ export const updateDocument = async (params: {
 
   if (!currentRevisionId) {
     try {
-      const [document] = await db
+      return await db.transaction(async (tx) => {
+        const [targetDocument] = await tx
+          .select({ categoryId: documents.categoryId })
+          .from(documents)
+          .where(and(eq(documents.id, documentId), isNull(documents.deletedAt)))
+          .limit(1)
+          .for("update");
+        if (!targetDocument) throw new Error("対象の書類が見つかりません。");
+
+        await assertCategoryCanBeUsed(tx, categoryId, targetDocument.categoryId);
+
+      const [document] = await tx
         .update(documents)
         .set(documentUpdate)
-        .where(eq(documents.id, documentId))
+        .where(and(eq(documents.id, documentId), isNull(documents.deletedAt)))
         .returning(documentColumns);
       if (!document) throw new Error("書類の更新に失敗しました。");
       return document;
+      });
     } catch {
       console.error("[updateDocument] DB更新に失敗しました。");
       throw new Error("書類の更新に失敗しました。");
@@ -272,10 +327,20 @@ export const updateDocument = async (params: {
 
   try {
     return await db.transaction(async (tx) => {
+      const [targetDocument] = await tx
+        .select({ categoryId: documents.categoryId })
+        .from(documents)
+        .where(and(eq(documents.id, documentId), isNull(documents.deletedAt)))
+        .limit(1)
+        .for("update");
+      if (!targetDocument) throw new Error("対象の書類が見つかりません。");
+
+      await assertCategoryCanBeUsed(tx, categoryId, targetDocument.categoryId);
+
       const [document] = await tx
         .update(documents)
         .set(documentUpdate)
-        .where(eq(documents.id, documentId))
+        .where(and(eq(documents.id, documentId), isNull(documents.deletedAt)))
         .returning(documentColumns);
       if (!document) throw new Error("書類の更新に失敗しました。");
 
@@ -331,11 +396,14 @@ export const reviseDocument = async (params: {
   try {
     draft = await db.transaction(async (tx) => {
       const [targetDocument] = await tx
-        .select({ id: documents.id })
+        .select({ id: documents.id, categoryId: documents.categoryId })
         .from(documents)
         .where(and(eq(documents.id, documentId), isNull(documents.deletedAt)))
-        .limit(1);
+        .limit(1)
+        .for("update");
       if (!targetDocument) throw new Error("対象の書類が見つかりません。");
+
+      await assertCategoryCanBeUsed(tx, categoryId, targetDocument.categoryId);
 
       const [latest] = await tx
         .select({
@@ -392,6 +460,7 @@ export const reviseDocument = async (params: {
       };
     });
   } catch (error) {
+    if (isCategoryUnavailableError(error)) throw error;
     if (isPostgresError(error, "23505")) {
       throw new Error("同時に改訂処理が行われました。画面を再読み込みして、もう一度お試しください。");
     }
@@ -417,6 +486,16 @@ export const reviseDocument = async (params: {
 
   try {
     await db.transaction(async (tx) => {
+      const [targetDocument] = await tx
+        .select({ categoryId: documents.categoryId })
+        .from(documents)
+        .where(and(eq(documents.id, documentId), isNull(documents.deletedAt)))
+        .limit(1)
+        .for("update");
+      if (!targetDocument) throw new Error("対象の書類が見つかりません。");
+
+      await assertCategoryCanBeUsed(tx, categoryId, targetDocument.categoryId);
+
       await tx.update(revisions).set({ filePath: storagePath }).where(eq(revisions.id, draft.revision.id));
       const [removedDocument] = await tx
         .update(documents)

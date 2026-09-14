@@ -9,17 +9,15 @@
 
 import * as React from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Typography,
-  TextField,
   Button as MuiButton,
   Box,
 } from "@mui/material";
 import CategoryIcon from "@mui/icons-material/Category";
 import Button from "@/components/elements/Button";
+import CommonDialog from "@/components/elements/CommonDialog";
+import FormFieldLabel from "@/components/elements/FormFieldLabel";
+import FormTextField from "@/components/elements/FormTextField";
 import { addCategoryAction } from "@/app/management/actions";
 
 type Props = {
@@ -60,33 +58,29 @@ export default function CategoryAddDialog({ open, onClose, onSaved }: Props) {
   };
 
   return (
-    <Dialog
+    <CommonDialog
       open={open}
       onClose={onClose}
       maxWidth="xs"
-      fullWidth
-      TransitionProps={{ onEnter: handleEnter }}
-      PaperProps={{
-        sx: { borderRadius: 3, bgcolor: "#FAF6EF", border: "1px solid #E5E2DC" },
-      }}
+      transitionProps={{ onEnter: handleEnter }}
+      title="新規追加"
+      description="カテゴリ名を入力し、追加ボタンを押してください。"
+      actions={
+        <>
+          <MuiButton onClick={onClose} disabled={submitting} sx={{ color: "#5F5E5A" }}>
+            キャンセル
+          </MuiButton>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? "追加中..." : "追加"}
+          </Button>
+        </>
+      }
     >
-      <DialogTitle sx={{ pb: 0.5, fontWeight: 700, color: "#2C2C2A" }}>
-        新規追加
-      </DialogTitle>
-      <Typography variant="body2" sx={{ px: 3, color: "#5F5E5A" }}>
-        カテゴリ名を入力し、追加ボタンを押してください。
-      </Typography>
-
-      <DialogContent sx={{ pt: 2 }}>
         <Box>
-          <Typography
-            variant="caption"
-            sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "#86171F", fontWeight: 600, mb: 0.5 }}
-          >
-            <CategoryIcon sx={{ fontSize: 16 }} />
+          <FormFieldLabel icon={<CategoryIcon sx={{ fontSize: 16 }} />}>
             カテゴリ名
-          </Typography>
-          <TextField
+          </FormFieldLabel>
+          <FormTextField
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="カテゴリ名を入力"
@@ -101,16 +95,6 @@ export default function CategoryAddDialog({ open, onClose, onSaved }: Props) {
             {error}
           </Typography>
         )}
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 2, justifyContent: "flex-end", gap: 1 }}>
-        <MuiButton onClick={onClose} disabled={submitting} sx={{ color: "#5F5E5A" }}>
-          キャンセル
-        </MuiButton>
-        <Button onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "追加中..." : "追加"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </CommonDialog>
   );
 }

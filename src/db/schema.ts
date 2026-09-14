@@ -1,4 +1,4 @@
-import { pgTable, index, unique, bigserial, text, integer, timestamp, bigint, uuid, smallint, boolean, foreignKey, uniqueIndex } from "drizzle-orm/pg-core"
+import { pgTable, index, unique, bigserial, text, integer, timestamp, bigint, boolean, uuid, smallint, foreignKey, uniqueIndex } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
@@ -16,6 +16,7 @@ export const documentCategories = pgTable("document_categories", {
 	deletedAt: timestamp("deleted_at", { withTimezone: true, mode: 'string' }),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	deletedBy: bigint("deleted_by", { mode: "number" }),
+	activeFlag: boolean("active_flag").default(true).notNull(),
 }, (table) => [
 	index("idx_document_categories_active").using("btree", table.displayOrder.asc().nullsLast().op("int4_ops")).where(sql`(deleted_at IS NULL)`),
 	unique("document_categories_name_key").on(table.name),

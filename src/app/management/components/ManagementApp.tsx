@@ -16,7 +16,6 @@
  */
 
 import * as React from "react";
-import Link from "next/link";
 import {
   Accordion,
   AccordionSummary,
@@ -27,11 +26,11 @@ import {
   Tab,
   Tabs,
   Typography,
-  Button,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DescriptionIcon from "@mui/icons-material/Description";
 import CategoryGrid from "@/app/management/components/CategoryGrid";
+import SecondaryNavigationLink from "@/components/elements/SecondaryNavigationLink";
 import type { DocumentCategoryWithCount } from "@/types/interface";
 
 type Props = {
@@ -78,29 +77,28 @@ export default function ManagementApp({ initialCategories, canManageAuthorities 
   ];
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: { xs: 2, sm: 3 },
-        borderRadius: 4,
-        bgcolor: "#FAF6EF",
-        border: "1px solid #E5E2DC",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
-      }}
-    >
+    // <Paper
+    //   elevation={0}
+    //   sx={{
+    //     p: { xs: 2, sm: 3 },
+    //     borderRadius: 4,
+    //     bgcolor: "#FAF6EF",
+    //     border: "1px solid #E5E2DC",
+    //     boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
+    //   }}
+    // >
+    <>
       <Typography variant="h6" sx={{ fontWeight: 700, color: "#2C2C2A", mb: 2 }}>
         管理
       </Typography>
 
       {canManageAuthorities && (
-        <Button
-          component={Link}
+        <SecondaryNavigationLink
           href="/management/authorities"
-          variant="outlined"
-          sx={{ mb: 2, borderColor: "#C7C2B8", color: "#5F5E5A" }}
+          sx={{ mb: 2 }}
         >
           権限設定
-        </Button>
+        </SecondaryNavigationLink>
       )}
 
       {/* セクション（アコーディオン）リスト */}
@@ -109,7 +107,8 @@ export default function ManagementApp({ initialCategories, canManageAuthorities 
           <ManagementSection key={section.key} section={section} />
         ))}
       </Stack>
-    </Paper>
+      </>
+    // </Paper>
   );
 }
 

@@ -1,71 +1,79 @@
-// src/app/management/actions.ts
-// ============================================================
-// 管理画面：書類カテゴリの Server Actions
-// - クライアント（カテゴリダイアログ）から呼ぶ
-// ============================================================
-
 "use server";
 import "server-only";
 import { revalidatePath } from "next/cache";
 import { withAuth } from "@/lib/withAuth";
 import { parsePositiveSafeInteger } from "@/lib/parseId";
+import { assertCanManageDocumentCategories } from "@/server/permissions/assertPermissions";
+import { getPermissionActionErrorMessage } from "@/server/permissions/permissionErrorHandling";
 import {
   insertCategory,
-  updateCategory,
   removeCategory,
+  setCategoryActive,
+  updateCategory,
 } from "@/app/management/server/write";
 import type { DocumentCategory } from "@/types/interface";
 
-// ─────────────────────────────────────────────
-// カテゴリ新規追加
-// ─────────────────────────────────────────────
-export const addCategoryAction = async (name: string): Promise<DocumentCategory> => {
-  return withAuth(async (ctx) => {
-    const inserted = await insertCategory(name, ctx);
-    revalidatePath("/management");
-    revalidatePath("/document"); // 一覧側のフィルタにも影響
-    return inserted;
-  });
+const revalidateCategoryViews = () => {
+  revalidatePath("/management");
+  revalidatePath("/document");
 };
 
-// ─────────────────────────────────────────────
-// カテゴリ編集
-// ─────────────────────────────────────────────
+export const addCategoryAction = async (name: string): Promise<DocumentCategory> =>
+  withAuth(async (ctx) => {
+    await assertCanManageDocumentCategories(ctx.user.userId);
+    const inserted = await insertCategory(name, ctx);
+    revalidateCategoryViews();
+    return inserted;
+  });
+
 export const editCategoryAction = async (
   id: number,
   name: string
-): Promise<DocumentCategory> => {
-  const safeId = parsePositiveSafeInteger(id, "カテゴリID");
-
-  return withAuth(async (ctx) => {
+): Promise<DocumentCategory> =>
+  withAuth(async (ctx) => {
+    await assertCanManageDocumentCategories(ctx.user.userId);
+    const safeId = parsePositiveSafeInteger(id, "カテゴリID");
     const updated = await updateCategory(safeId, name, ctx);
-    revalidatePath("/management");
-    revalidatePath("/document");
+    revalidateCategoryViews();
     return updated;
   });
-};
 
-// ─────────────────────────────────────────────
-// カテゴリ削除
-// ─────────────────────────────────────────────
+export const setCategoryActiveAction = async (
+  id: number,
+  activeFlag: boolean
+): Promise<DocumentCategory> =>
+  withAuth(async (ctx) => {
+    await assertCanManageDocumentCategories(ctx.user.userId);
+    const safeId = parsePositiveSafeInteger(id, "カテゴリID");
+    if (typeof activeFlag !== "boolean") {
+      throw new Error("カテゴリの状態が不正です。");
+    }
+    const updated = await setCategoryActive(safeId, activeFlag, ctx);
+    revalidateCategoryViews();
+    return updated;
+  });
+
 export type DeleteCategoryResult =
   | { success: true; deletedId: number }
   | { success: false; error: string };
 
 export const removeCategoryAction = async (
   id: number
-): Promise<DeleteCategoryResult> => {
-  const safeId = parsePositiveSafeInteger(id, "カテゴリID");
-
-  return withAuth(async (ctx) => {
+): Promise<DeleteCategoryResult> =>
+  withAuth(async (ctx) => {
     try {
+      await assertCanManageDocumentCategories(ctx.user.userId);
+      const safeId = parsePositiveSafeInteger(id, "カテゴリID");
       await removeCategory(safeId, ctx);
-      revalidatePath("/management");
-      revalidatePath("/document");
+      revalidateCategoryViews();
       return { success: true, deletedId: safeId };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "削除に失敗しました。";
-      return { success: false, error: msg };
+    } catch (error) {
+      const permissionErrorMessage = getPermissionActionErrorMessage(error);
+      return {
+        success: false,
+        error:
+          permissionErrorMessage ??
+          (error instanceof Error ? error.message : "カテゴリの削除に失敗しました。"),
+      };
     }
   });
-};

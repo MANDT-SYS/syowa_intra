@@ -13,11 +13,11 @@ import { ConstList } from "@/utils/ConstList";
  * 指定ユーザーに、有効な AUTHORIZED_USER 権限の割当があるかを確認する。
  * DEVELOPER 判定は呼び出し元で先に完結するため、この関数では扱わない。
  */
-export const hasActiveAuthorizedUserRole = async (
+export const getActiveAuthorizedUserAuthorityName = async (
   userId: number
-): Promise<boolean> => {
+): Promise<{ authorityName: string } | null> => {
   const [assignment] = await db
-    .select({ authorityUserId: authorityUser.authorityUserId })
+    .select({ authorityName: authorityMaster.authorityName })
     .from(authorityUser)
     .innerJoin(
       authorityMaster,
@@ -33,7 +33,7 @@ export const hasActiveAuthorizedUserRole = async (
     )
     .limit(1);
 
-  return assignment !== undefined;
+  return assignment ?? null;
 };
 
 const getActiveAuthorizedUserIds = async (): Promise<Set<number>> => {

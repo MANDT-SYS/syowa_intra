@@ -23,16 +23,25 @@ import {
   Stack,
   Tooltip,
   Typography,
-  Button as MuiButton,
+  Chip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import BlockIcon from "@mui/icons-material/Block";
+import ReplayIcon from "@mui/icons-material/Replay";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import CategoryAddDialog from "@/app/management/components/CategoryAddDialog";
 import CategoryEditDialog from "@/app/management/components/CategoryEditDialog";
 import CategoryDeleteDialog from "@/app/management/components/CategoryDeleteDialog";
+import CategoryStatusDialog from "@/app/management/components/CategoryStatusDialog";
+import PrimaryActionButton from "@/components/elements/PrimaryActionButton";
+import ResultDialog from "@/components/elements/ResultDialog";
 import type { DocumentCategoryWithCount } from "@/types/interface";
+import {
+  commonDataGridProps,
+  createCommonDataGridSx,
+} from "@/components/elements/dataGridConfig";
 
 type Props = {
   initialCategories: DocumentCategoryWithCount[];
@@ -45,6 +54,11 @@ export default function CategoryGrid({ initialCategories }: Props) {
   const [addOpen, setAddOpen] = React.useState(false);
   const [editTarget, setEditTarget] = React.useState<DocumentCategoryWithCount | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<DocumentCategoryWithCount | null>(null);
+  const [statusTarget, setStatusTarget] = React.useState<{
+    category: DocumentCategoryWithCount;
+    activeFlag: boolean;
+  } | null>(null);
+  const [resultMessage, setResultMessage] = React.useState("");
 
   // 行データに No を付与
   const rows = React.useMemo(
@@ -58,6 +72,22 @@ export default function CategoryGrid({ initialCategories }: Props) {
 
   // 共通：データ更新後に画面を最新化
   const refresh = () => router.refresh();
+  const handleCategoryAdded = () => {
+    refresh();
+    setResultMessage("登録が完了しました。");
+  };
+  const handleCategoryEdited = () => {
+    refresh();
+    setResultMessage("更新が完了しました。");
+  };
+  const handleCategoryDeleted = () => {
+    refresh();
+    setResultMessage("削除が完了しました。");
+  };
+  const handleCategoryStatusSaved = (activeFlag: boolean) => {
+    refresh();
+    setResultMessage(activeFlag ? "再有効化が完了しました。" : "使用停止が完了しました。");
+  };
 
   const columns: GridColDef<(typeof rows)[number]>[] = [
     {
@@ -69,105 +99,123 @@ export default function CategoryGrid({ initialCategories }: Props) {
       sortable: false,
     },
     {
-      field: "id",
-      headerName: "カテゴリID",
-      flex: 1.2,
-      minWidth: 180,
-      renderCell: (p) => (
-        <Typography variant="caption" sx={{ color: "#888780" }}>
-          {p.value as number}
-        </Typography>
-      ),
-    },
-    {
-      field: "name",
-      headerName: "カテゴリ名",
-      flex: 1,
-      minWidth: 160,
-      renderCell: (p) => (
-        <Typography variant="body2" sx={{ fontWeight: 700, color: "#2C2C2A" }}>
-          {p.value as string}
-        </Typography>
-      ),
-    },
-    {
-      field: "document_count",
-      headerName: "件数",
-      width: 90,
-      align: "center",
-      headerAlign: "center",
-    },
-    {
       field: "actions",
-      headerName: "",
-      width: 110,
+      headerName: "編集/有効/削除",
+      width: 140,
       sortable: false,
       filterable: false,
-      renderCell: (p) => (
+      renderCell: (p) => {
+        const isUsed = p.row.document_count > 0;
+        return (
         <Stack direction="row" spacing={0.5}>
           <Tooltip title="編集">
             <IconButton size="small" onClick={() => setEditTarget(p.row)} sx={{ color: "#5F5E5A" }}>
               <EditIcon fontSize="small" />
             </IconButton>
           </Tooltip>
+          <Tooltip title={p.row.activeFlag ? "使用停止" : "再有効化"}>
+            <IconButton
+              size="small"
+              onClick={() => setStatusTarget({ category: p.row, activeFlag: !p.row.activeFlag })}
+              sx={{ color: "#5F5E5A" }}
+            >
+              {p.row.activeFlag ? <BlockIcon fontSize="small" /> : <ReplayIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
           <Tooltip title="削除">
-            <IconButton size="small" onClick={() => setDeleteTarget(p.row)} sx={{ color: "#86171F" }}>
+            <IconButton
+              size="small"
+              disabled={isUsed}
+              onClick={() => setDeleteTarget(p.row)}
+              sx={{ color: "#86171F" }}
+            >
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Tooltip>
         </Stack>
+        );
+      },
+    },
+    {
+      field: "activeFlag",
+      headerName: "状態",
+      width: 110,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (p) => (
+        <Chip
+          label={p.value ? "有効" : "使用停止"}
+          size="small"
+          color={p.value ? "success" : "default"}
+          variant={p.value ? "filled" : "outlined"}
+        />
       ),
     },
+    // {
+    //   field: "id",
+    //   headerName: "カテゴリID",
+    //   flex: 1.2,
+    //   minWidth: 180,
+    //   renderCell: (p) => (
+    //     <Typography variant="caption" sx={{ color: "#888780" }}>
+    //       {p.value as number}
+    //     </Typography>
+    //   ),
+    // },
+    {
+      field: "name",
+      headerName: "カテゴリ名",
+      flex: 1,
+      minWidth: 160,
+      renderCell: (p) => (
+        <Typography variant="body2" sx={{ fontWeight: 500, color: "#2C2C2A" }}>
+          {p.value as string}
+        </Typography>
+      ),
+    },
+    // {
+    //   field: "document_count",
+    //   headerName: "件数",
+    //   width: 150,
+    //   align: "center",
+    //   headerAlign: "center",
+    // },
+    
+    
   ];
 
   return (
     <Paper
       elevation={0}
-      sx={{ p: 0, bgcolor: "transparent", boxShadow: "none" }}
+      sx={{
+        p: { xs: 1.5, sm: 2 },
+        bgcolor: "#fff",
+        border: "1px solid #E5E2DC",
+        borderRadius: 2,
+        boxShadow: "none",
+      }}
     >
-      {/* 「新規追加」ボタンは右上 */}
-      <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1.5 }}>
-        <MuiButton
-          variant="outlined"
+      {/* 「新規追加」ボタンはグリッドと同じカード内の左上 */}
+      <Stack direction="row" justifyContent="flex-start" sx={{ mb: 1.5 }}>
+        <PrimaryActionButton
           startIcon={<AddIcon />}
           onClick={() => setAddOpen(true)}
-          sx={{
-            borderColor: "#C7C2B8",
-            color: "#5F5E5A",
-            bgcolor: "#fff",
-            "&:hover": { borderColor: "#86171F", color: "#86171F" },
-          }}
         >
           新規追加
-        </MuiButton>
+        </PrimaryActionButton>
       </Stack>
 
       {/* DataGrid */}
       <Box
         sx={{
           width: "100%",
-          "& .MuiDataGrid-root": { border: "none", bgcolor: "transparent" },
-          "& .MuiDataGrid-columnHeaders": {
-            bgcolor: "#F1ECE3",
-            borderBottom: "1px solid #E5E2DC",
-          },
-          "& .MuiDataGrid-columnHeaderTitle": { fontWeight: 700, color: "#5F5E5A" },
-          "& .MuiDataGrid-cell": { borderBottom: "1px solid #EDEAE2" },
-          "& .MuiDataGrid-row:hover": { bgcolor: "rgba(134,23,31,0.04)" },
-          "& .MuiDataGrid-footerContainer": { borderTop: "1px solid #E5E2DC" },
         }}
       >
         <DataGrid
-          autoHeight
+          {...commonDataGridProps}
           rows={rows}
           columns={columns}
-          disableRowSelectionOnClick
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-          getRowHeight={() => "auto"}
-          sx={{
-            "& .MuiDataGrid-cell": { py: 1.2 },
-          }}
+          sx={createCommonDataGridSx()}
         />
       </Box>
 
@@ -175,7 +223,7 @@ export default function CategoryGrid({ initialCategories }: Props) {
       <CategoryAddDialog
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        onSaved={refresh}
+        onSaved={handleCategoryAdded}
       />
 
       {/* 編集ダイアログ */}
@@ -183,7 +231,7 @@ export default function CategoryGrid({ initialCategories }: Props) {
         <CategoryEditDialog
           open={!!editTarget}
           onClose={() => setEditTarget(null)}
-          onSaved={refresh}
+          onSaved={handleCategoryEdited}
           current={editTarget}
         />
       )}
@@ -193,10 +241,25 @@ export default function CategoryGrid({ initialCategories }: Props) {
         <CategoryDeleteDialog
           open={!!deleteTarget}
           onClose={() => setDeleteTarget(null)}
-          onDeleted={refresh}
+          onDeleted={handleCategoryDeleted}
           current={deleteTarget}
         />
       )}
+
+      {statusTarget && (
+        <CategoryStatusDialog
+          open={!!statusTarget}
+          onClose={() => setStatusTarget(null)}
+          onSaved={() => handleCategoryStatusSaved(statusTarget.activeFlag)}
+          current={statusTarget.category}
+          activeFlag={statusTarget.activeFlag}
+        />
+      )}
+      <ResultDialog
+        open={Boolean(resultMessage)}
+        message={resultMessage}
+        onClose={() => setResultMessage("")}
+      />
     </Paper>
   );
 }

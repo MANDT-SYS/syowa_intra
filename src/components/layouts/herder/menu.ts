@@ -1,30 +1,20 @@
-import type { HeaderAppItem, HeaderMenuItem, UserInfo } from "@/types/interface";
-import { ConstList } from "@/utils/ConstList";
+import type { HeaderAppItem, HeaderMenuItem } from "@/types/interface";
 
-  export function buildHeaderMenu(user: UserInfo): HeaderMenuItem[] {
+export function buildHeaderMenu(canAccessManagement: boolean): HeaderMenuItem[] {
+  const items: HeaderMenuItem[] = [
+    { label: "ホーム", href: "/home", iconKey: "home" },
+    { label: "設定", href: "/setting", iconKey: "settings" },
+  ];
 
-    const items: HeaderMenuItem[] = [];
-  
-    //メニュー項目を作成
-    //開発者権限の場合
-    if (user.accountancyAuthorityId === ConstList.DEVELORER_AUTHORITY) {
-      return [
-        { label: "ホーム", href: "/home", iconKey: "home" },
-        { label: "マイページ", href: "/my_page", iconKey: "account" },
-        { label: "設定", href: "/setting", iconKey: "settings" },
-      ];
-    }
-  
-    //一般権限の場合
-    items.push({ label: "ホーム", href: "/home", iconKey: "home" });
-    items.push({ label: "マイページ", href: "/my_page", iconKey: "account" });
-    items.push({ label: "設定", href: "/setting", iconKey: "settings" });
-  
-    return items;
+  if (canAccessManagement) {
+    items.push({ label: "管理画面", href: "/management", iconKey: "settings" });
   }
-  
-  //アプリリンクを作成
-  export function buildAppLinks(): HeaderAppItem[] {
+
+  return items;
+}
+
+//アプリリンクを作成
+export function buildAppLinks(): HeaderAppItem[] {
     return [
       {
         label: "外注費管理",
@@ -52,6 +42,4 @@ import { ConstList } from "@/utils/ConstList";
         href: "https://system.syowa.com/master_management/home",
       },
     ];
-  }
-  
-  export { ConstList };
+}

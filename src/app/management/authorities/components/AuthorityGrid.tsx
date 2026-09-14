@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import EditIcon from "@mui/icons-material/Edit";
 import {
-  Alert,
   Box,
-  Chip,
   IconButton,
-  Snackbar,
   Tooltip,
   Typography,
 } from "@mui/material";
 import AuthorityChangeDialog from "@/app/management/authorities/components/AuthorityChangeDialog";
+import ResultDialog from "@/components/elements/ResultDialog";
+import AuthorityChip from "@/components/elements/AuthorityChip";
 import type { AuthorityUserListItem, UserAuthorityLevel } from "@/types/authority";
+import {
+  commonDataGridProps,
+  createCommonDataGridSx,
+} from "@/components/elements/dataGridConfig";
 
 type GridRow = AuthorityUserListItem & { no: number };
 
@@ -25,22 +28,10 @@ type Props = {
   initialUsers: AuthorityUserListItem[];
 };
 
-const authorityLabel: Record<UserAuthorityLevel, string> = {
-  DEVELOPER: "開発者",
-  AUTHORIZED_USER: "権限者",
-  GENERAL: "一般",
-};
-
-const authorityChipColor: Record<UserAuthorityLevel, "error" | "primary" | "default"> = {
-  DEVELOPER: "error",
-  AUTHORIZED_USER: "primary",
-  GENERAL: "default",
-};
-
 export default function AuthorityGrid({ actorUserId, initialUsers }: Props) {
   const router = useRouter();
   const [changeTarget, setChangeTarget] = React.useState<AuthorityUserListItem | null>(null);
-  const [successMessage, setSuccessMessage] = React.useState("");
+  const [resultMessage, setResultMessage] = React.useState("");
 
   const rows = React.useMemo<GridRow[]>(
     () => initialUsers.map((user, index) => ({ ...user, no: index + 1 })),
@@ -48,7 +39,7 @@ export default function AuthorityGrid({ actorUserId, initialUsers }: Props) {
   );
 
   const handleSaved = (message: string) => {
-    setSuccessMessage(message);
+    setResultMessage(message);
     router.refresh();
   };
 
@@ -87,15 +78,7 @@ export default function AuthorityGrid({ actorUserId, initialUsers }: Props) {
       headerAlign: "center",
       renderCell: (params) => {
         const level = params.value as UserAuthorityLevel;
-        return (
-          <Chip
-            label={authorityLabel[level]}
-            color={authorityChipColor[level]}
-            size="small"
-            variant={level === "GENERAL" ? "outlined" : "filled"}
-            sx={{ fontWeight: 700 }}
-          />
-        );
+        return <AuthorityChip level={level} />;
       },
     },
     {
@@ -133,27 +116,14 @@ export default function AuthorityGrid({ actorUserId, initialUsers }: Props) {
       <Box
         sx={{
           width: "100%",
-          "& .MuiDataGrid-root": { border: "none", bgcolor: "transparent" },
-          "& .MuiDataGrid-columnHeaders": {
-            bgcolor: "#F1ECE3",
-            borderBottom: "1px solid #E5E2DC",
-          },
-          "& .MuiDataGrid-columnHeaderTitle": { fontWeight: 700, color: "#5F5E5A" },
-          "& .MuiDataGrid-cell": { borderBottom: "1px solid #EDEAE2" },
-          "& .MuiDataGrid-row:hover": { bgcolor: "rgba(134,23,31,0.04)" },
-          "& .MuiDataGrid-footerContainer": { borderTop: "1px solid #E5E2DC" },
         }}
       >
         <DataGrid
-          autoHeight
+          {...commonDataGridProps}
           rows={rows}
           columns={columns}
           getRowId={getAuthorityGridRowId}
-          disableRowSelectionOnClick
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-          getRowHeight={() => "auto"}
-          sx={{ "& .MuiDataGrid-cell": { py: 1.2 } }}
+          sx={createCommonDataGridSx()}
         />
       </Box>
 
@@ -166,15 +136,11 @@ export default function AuthorityGrid({ actorUserId, initialUsers }: Props) {
         />
       )}
 
-      <Snackbar
-        open={Boolean(successMessage)}
-        autoHideDuration={4000}
-        onClose={() => setSuccessMessage("")}
-      >
-        <Alert severity="success" variant="filled" onClose={() => setSuccessMessage("")}>
-          {successMessage}
-        </Alert>
-      </Snackbar>
+      <ResultDialog
+        open={Boolean(resultMessage)}
+        message={resultMessage}
+        onClose={() => setResultMessage("")}
+      />
     </>
   );
 }

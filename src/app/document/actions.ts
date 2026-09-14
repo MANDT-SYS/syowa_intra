@@ -12,6 +12,8 @@ import { revalidatePath } from "next/cache";
 import { withAuth } from "@/lib/withAuth";
 import { parsePositiveSafeInteger } from "@/lib/parseId";
 import { assertFileSize } from "@/lib/fileSize";
+import { assertCanManageDocuments } from "@/server/permissions/assertPermissions";
+import { getPermissionActionErrorMessage } from "@/server/permissions/permissionErrorHandling";
 import {
   insertDocument,
   updateDocument,
@@ -52,6 +54,7 @@ const formRequiredId = (fd: FormData, key: string): number => {
 // ─────────────────────────────────────────────
 export const addDocumentAction = async (formData: FormData): Promise<{ id: number }> => {
   return withAuth(async (ctx) => {
+    await assertCanManageDocuments(ctx.user.userId);
     const title = formString(formData, "title");
     const managementNumber = formString(formData, "managementNumber");
     const description = formString(formData, "description");
@@ -88,6 +91,7 @@ export const addDocumentAction = async (formData: FormData): Promise<{ id: numbe
 // ─────────────────────────────────────────────
 export const editDocumentAction = async (formData: FormData): Promise<{ id: number }> => {
   return withAuth(async (ctx) => {
+    await assertCanManageDocuments(ctx.user.userId);
     const documentId = formRequiredId(formData, "documentId");
 
     const title = formString(formData, "title");
@@ -124,6 +128,7 @@ export const editDocumentAction = async (formData: FormData): Promise<{ id: numb
 // ─────────────────────────────────────────────
 export const reviseDocumentAction = async (formData: FormData): Promise<{ id: number }> => {
   return withAuth(async (ctx) => {
+    await assertCanManageDocuments(ctx.user.userId);
     const documentId = formRequiredId(formData, "documentId");
 
     const title = formString(formData, "title");
@@ -166,14 +171,17 @@ export type DeleteDocumentResult =
 export const removeDocumentAction = async (
   documentId: number
 ): Promise<DeleteDocumentResult> => {
-  const safeDocumentId = parsePositiveSafeInteger(documentId, "documentId");
   return withAuth<DeleteDocumentResult>(async (ctx) => {
     try {
+      await assertCanManageDocuments(ctx.user.userId);
+      const safeDocumentId = parsePositiveSafeInteger(documentId, "documentId");
       await removeDocument({ documentId: safeDocumentId, ctx });
       revalidatePath("/document");
       return { success: true, deletedId: safeDocumentId };
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "削除に失敗しました。";
+      const msg =
+        getPermissionActionErrorMessage(error) ??
+        (error instanceof Error ? error.message : "削除に失敗しました。");
       return { success: false, error: msg };
     }
   });

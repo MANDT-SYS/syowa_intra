@@ -13,6 +13,8 @@ import { getCalendars } from "@/app/calendar/server/read";
 import type { CalendarRecord } from "@/types/interface";
 import { parseUuid } from "@/lib/parseUuid";
 import { assertFileSize } from "@/lib/fileSize";
+import { assertCanManageCalendars } from "@/server/permissions/assertPermissions";
+import { getPermissionActionErrorMessage } from "@/server/permissions/permissionErrorHandling";
 
 export type CalendarWithUrl = CalendarRecord & { pdfUrl: string };
 
@@ -36,6 +38,7 @@ export const addCalendarAction = async (
   formData: FormData
 ): Promise<CalendarWithUrl> => {
   return withAuth(async (ctx) => {
+    await assertCanManageCalendars(ctx.user.userId);
     const year = Number(formData.get("year"));
     const title = formData.get("title") as string;
     const file = formData.get("file") as File;
@@ -62,6 +65,7 @@ export const updateCalendarAction = async (
   formData: FormData
 ): Promise<CalendarWithUrl> => {
   return withAuth(async (ctx) => {
+    await assertCanManageCalendars(ctx.user.userId);
     const id = parseUuid(formData.get("id"), "カレンダーID");
     const year = Number(formData.get("year"));
     const title = formData.get("title") as string;
@@ -93,8 +97,19 @@ export const deleteCalendarAction = async (
   id: string
 ): Promise<DeleteCalendarResult> => {
   return withAuth(async (ctx) => {
-    await removeCalendar(parseUuid(id, "カレンダーID"), ctx);
-    revalidatePath("/calendar");
-    return { success: true, deletedId: id };
+    try {
+      await assertCanManageCalendars(ctx.user.userId);
+      const safeId = parseUuid(id, "カレンダーID");
+      await removeCalendar(safeId, ctx);
+      revalidatePath("/calendar");
+      return { success: true, deletedId: safeId };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          getPermissionActionErrorMessage(error) ??
+          (error instanceof Error ? error.message : "カレンダーの削除に失敗しました。"),
+      };
+    }
   });
 };

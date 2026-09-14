@@ -21,6 +21,7 @@ export const getCategoriesWithCount = async (): Promise<DocumentCategoryWithCoun
         id: documentCategories.id,
         name: documentCategories.name,
         display_order: documentCategories.displayOrder,
+        activeFlag: documentCategories.activeFlag,
         created_at: documentCategories.createdAt,
         created_by: documentCategories.createdBy,
         updated_at: documentCategories.updatedAt,

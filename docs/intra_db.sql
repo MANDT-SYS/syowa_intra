@@ -29,7 +29,9 @@
             -- 論理削除日時（NULLなら有効、値があれば無効化済み）
             deleted_at TIMESTAMPTZ,
             -- 論理削除実行者（ログインユーザーのuser_id）
-            deleted_by BIGINT
+            deleted_by BIGINT,
+            -- カテゴリーの使用可否（TRUE=有効、FALSE=使用停止）
+            active_flag BOOLEAN NOT NULL DEFAULT TRUE
         );
 
         -- テーブルコメント
@@ -45,6 +47,7 @@
         COMMENT ON COLUMN document_categories.updated_by IS '最終更新者（user_id）';
         COMMENT ON COLUMN document_categories.deleted_at IS '論理削除日時（NULLなら有効）';
         COMMENT ON COLUMN document_categories.deleted_by IS '論理削除実行者（user_id）';
+        COMMENT ON COLUMN document_categories.active_flag IS 'カテゴリーの使用可否。TRUE=有効、FALSE=使用停止。deleted_at IS NOT NULLの場合は論理削除が優先される。';
 
         -- 初期データ投入
         -- ※ created_by にはシステム管理者のuser_id:0(bigInt)を指定してください

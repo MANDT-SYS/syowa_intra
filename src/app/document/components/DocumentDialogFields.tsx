@@ -19,10 +19,8 @@ import * as React from "react";
 import {
   Box,
   FormControl,
-  InputLabel,
   MenuItem,
   Select,
-  TextField,
   Typography,
 } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
@@ -33,6 +31,8 @@ import NumbersIcon from "@mui/icons-material/Numbers";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import UploadIcon from "@mui/icons-material/UploadFile";
 import FileDropZone from "@/components/elements/FileDropZone";
+import FormFieldLabel from "@/components/elements/FormFieldLabel";
+import FormTextField from "@/components/elements/FormTextField";
 import type { DivisionInfo, DocumentCategory } from "@/types/interface";
 
 // 入力フィールドの値
@@ -54,6 +54,7 @@ type Props = {
   onFileChange: (file: File | null) => void;
   // セレクトボックス用の選択肢
   categories: DocumentCategory[];
+  currentInactiveCategory?: { id: number; name: string } | null;
   divisions: DivisionInfo[];
   // 表示モード切替
   showNotes?: boolean;           // 改版時のみ true
@@ -61,49 +62,31 @@ type Props = {
   disabled?: boolean;
 };
 
-// 各入力ラベル（アイコン付き）。タイトルが赤系の小ラベルになっている画像のデザインに合わせる
-const FieldLabel = ({
-  icon,
-  children,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) => (
-  <Typography
-    variant="caption"
-    sx={{
-      display: "flex",
-      alignItems: "center",
-      gap: 0.5,
-      color: "#86171F",
-      fontWeight: 600,
-      mb: 0.5,
-    }}
-  >
-    {icon}
-    {children}
-  </Typography>
-);
-
 export default function DocumentDialogFields({
   values,
   onChange,
   file,
   onFileChange,
   categories,
+  currentInactiveCategory = null,
   divisions,
   showNotes = false,
   fileHelperText,
   disabled = false,
 }: Props) {
+  const isCurrentInactiveCategory =
+    currentInactiveCategory !== null &&
+    values.categoryId === currentInactiveCategory.id &&
+    !categories.some((category) => category.id === currentInactiveCategory.id);
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       
 
       {/* 管理番号 */}
       <Box>
-        <FieldLabel icon={<NumbersIcon sx={{ fontSize: 16 }} />}>管理番号（必須）</FieldLabel>
-        <TextField
+        <FormFieldLabel icon={<NumbersIcon sx={{ fontSize: 16 }} />}>管理番号（必須）</FormFieldLabel>
+        <FormTextField
           value={values.managementNumber}
           onChange={(e) => onChange("managementNumber", e.target.value)}
           placeholder="例: SK-総-30"
@@ -114,8 +97,8 @@ export default function DocumentDialogFields({
       </Box>
       {/* 書類名 */}
       <Box>
-        <FieldLabel icon={<DescriptionIcon sx={{ fontSize: 16 }} />}>書類名（必須）</FieldLabel>
-        <TextField
+        <FormFieldLabel icon={<DescriptionIcon sx={{ fontSize: 16 }} />}>書類名（必須）</FormFieldLabel>
+        <FormTextField
           value={values.title}
           onChange={(e) => onChange("title", e.target.value)}
           placeholder="書類名を入力"
@@ -127,7 +110,7 @@ export default function DocumentDialogFields({
 
       {/* カテゴリ */}
       <Box>
-        <FieldLabel icon={<CategoryIcon sx={{ fontSize: 16 }} />}>カテゴリ（必須）</FieldLabel>
+        <FormFieldLabel icon={<CategoryIcon sx={{ fontSize: 16 }} />}>カテゴリ（必須）</FormFieldLabel>
         <FormControl fullWidth size="small" disabled={disabled}>
           <Select
             displayEmpty
@@ -140,12 +123,19 @@ export default function DocumentDialogFields({
             renderValue={(selected) => {
               if (!selected) return <Typography sx={{ color: "#aaa" }}>選択してください</Typography>;
               const c = categories.find((c) => c.id === selected);
-              return c?.name ?? selected;
+              if (c) return c.name;
+              if (isCurrentInactiveCategory) return currentInactiveCategory.name;
+              return selected;
             }}
           >
             <MenuItem value="">
               <em>選択してください</em>
             </MenuItem>
+            {isCurrentInactiveCategory && currentInactiveCategory && (
+              <MenuItem value={currentInactiveCategory.id} disabled>
+                {currentInactiveCategory.name}（使用停止）
+              </MenuItem>
+            )}
             {categories.map((c) => (
               <MenuItem key={c.id} value={c.id}>
                 {c.name}
@@ -157,7 +147,7 @@ export default function DocumentDialogFields({
 
       {/* 立案部署 */}
       <Box>
-        <FieldLabel icon={<ApartmentIcon sx={{ fontSize: 16 }} />}>立案部署（必須）</FieldLabel>
+        <FormFieldLabel icon={<ApartmentIcon sx={{ fontSize: 16 }} />}>立案部署（必須）</FormFieldLabel>
         <FormControl fullWidth size="small" disabled={disabled}>
           <Select
             displayEmpty
@@ -186,8 +176,8 @@ export default function DocumentDialogFields({
 
       {/* 書類説明 */}
       <Box>
-        <FieldLabel icon={<NotesIcon sx={{ fontSize: 16 }} />}>書類説明</FieldLabel>
-        <TextField
+        <FormFieldLabel icon={<NotesIcon sx={{ fontSize: 16 }} />}>書類説明</FormFieldLabel>
+        <FormTextField
           value={values.description}
           onChange={(e) => onChange("description", e.target.value)}
           placeholder="説明を入力"
@@ -202,8 +192,8 @@ export default function DocumentDialogFields({
       {/* 管理開始版数 */}
       {!showNotes && (
       <Box>
-        <FieldLabel icon={<NumbersIcon sx={{ fontSize: 16 }} />}>管理開始版数</FieldLabel>
-        <TextField
+        <FormFieldLabel icon={<NumbersIcon sx={{ fontSize: 16 }} />}>管理開始版数</FormFieldLabel>
+        <FormTextField
           value={values.managedFromRevisionNumber}
           onChange={(e) => {
             const n = Number(e.target.value);
@@ -220,8 +210,8 @@ export default function DocumentDialogFields({
       {/* 改版理由（改版ダイアログのみ） */}
       {showNotes && (
         <Box>
-          <FieldLabel icon={<EditNoteIcon sx={{ fontSize: 16 }} />}>改版内容・理由</FieldLabel>
-          <TextField
+          <FormFieldLabel icon={<EditNoteIcon sx={{ fontSize: 16 }} />}>改版内容・理由</FormFieldLabel>
+          <FormTextField
             value={values.notes}
             onChange={(e) => onChange("notes", e.target.value)}
             placeholder="改版の理由を入力"
@@ -236,7 +226,7 @@ export default function DocumentDialogFields({
 
       {/* ファイル */}
       <Box>
-        <FieldLabel icon={<UploadIcon sx={{ fontSize: 16 }} />}>ファイル（必須）</FieldLabel>
+        <FormFieldLabel icon={<UploadIcon sx={{ fontSize: 16 }} />}>ファイル（必須）</FormFieldLabel>
         <FileDropZone
           file={file}
           onChange={onFileChange}

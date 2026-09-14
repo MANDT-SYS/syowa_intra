@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { withAuth } from "@/lib/withAuth";
 import { parseExternalUserId } from "@/lib/parseExternalUserId";
 import { assertCanManageAuthorities } from "@/server/permissions/assertPermissions";
+import { getPermissionActionErrorMessage } from "@/server/permissions/permissionErrorHandling";
 import { changeUserAuthority, AuthorityChangeError } from "@/server/authorities/write";
 import { getAllUsers } from "@/server/users/getAllUsers";
 import { ConstList } from "@/utils/ConstList";
@@ -69,8 +70,9 @@ export const changeAuthorityAction = async (
       if (error instanceof AuthorityChangeError) {
         return { success: false, error: error.message };
       }
-      if (error instanceof Error && error.name === "AuthorizationError") {
-        return { success: false, error: error.message };
+      const permissionErrorMessage = getPermissionActionErrorMessage(error);
+      if (permissionErrorMessage) {
+        return { success: false, error: permissionErrorMessage };
       }
 
       console.error("[changeAuthorityAction] 権限変更に失敗しました。");

@@ -3,13 +3,12 @@
 "use client";
 
 import { useState } from "react";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import TextField from "@mui/material/TextField";
+import Box from "@mui/material/Box";
 import Button from "@/components/elements/Button";
 import MuiButton from "@mui/material/Button";
+import CommonDialog from "@/components/elements/CommonDialog";
+import ConfirmDialog from "@/components/elements/ConfirmDialog";
+import FormTextField from "@/components/elements/FormTextField";
 import type { CalendarWithUrl } from "@/app/calendar/actions";
 import { assertFileSize } from "@/lib/fileSize";
 
@@ -22,6 +21,7 @@ type Props = {
   current: CalendarWithUrl | null; // 編集対象カレンダー情報。新規の場合はnull
   existingYears: number[]; // 既存のカレンダー年リスト（重複チェック用）
   existingTitles: string[]; // 既存のカレンダータイトルリスト（重複チェック用）
+  canManageCalendars: boolean;
 };
 
 // CalendarEditModalコンポーネント本体
@@ -32,7 +32,8 @@ export default function CalendarDialog({
   onDelete,     // 削除処理コールバック
   current,      // 編集中カレンダー or 新規（null）
   existingYears, // 既存カレンダー年リスト
-  existingTitles // 既存カレンダータイトルリスト
+  existingTitles, // 既存カレンダータイトルリスト
+  canManageCalendars,
 }: Props) {
   //新規の場合はtrue、編集の場合はfalse
   const isNew = !current;
@@ -47,6 +48,7 @@ export default function CalendarDialog({
   const [saving, setSaving] = useState(false);
   // エラーメッセージを管理。初期値は空文字
   const [errorMessage, setErrorMessage] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   //ダイアログ開く処理
   const handleOpen = () => {
@@ -54,6 +56,7 @@ export default function CalendarDialog({
     setTitle(current?.title ?? "");
     setFile(null);
     setErrorMessage("");
+    setDeleteConfirmOpen(false);
   };
 
   //カレンダー保存処理
@@ -114,8 +117,8 @@ export default function CalendarDialog({
   //カレンダー削除処理
   const handleDelete = async () => {
     if (!current) return;
-    if (!window.confirm(`${current.year}年のカレンダーを削除しますか？`)) return;
 
+    setDeleteConfirmOpen(false);
     setSaving(true);
     try {
       await onDelete();
@@ -132,18 +135,42 @@ export default function CalendarDialog({
   };
 
   return (
-    <Dialog
+    <>
+    <CommonDialog
       open={open}
       onClose={onClose}
       maxWidth="sm"
-      fullWidth
-      TransitionProps={{ onEnter: handleOpen }}
+      transitionProps={{ onEnter: handleOpen }}
+      title={isNew ? "カレンダー新規追加" : `${current.year}年 カレンダー編集`}
+      contentSx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}
+      actionsLayout="space-between"
+      actions={
+        <>
+          <Box>
+            {!isNew && canManageCalendars && (
+              <MuiButton
+                color="error"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={saving}
+              >
+                削除
+              </MuiButton>
+            )}
+          </Box>
+          <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 1 }}>
+            <MuiButton onClick={onClose} disabled={saving}>
+              キャンセル
+            </MuiButton>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "保存中..." : "保存"}
+            </Button>
+          </Box>
+        </>
+      }
     >
       {/* ダイアログタイトル */}
       {/* 新規の場合は ’カレンダー新規追加’ 、編集の場合は ’カレンダー編集’ を表示 */}
-      <DialogTitle>{isNew ? "カレンダー新規追加" : `${current.year}年 カレンダー編集`}</DialogTitle>
-      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}>
-        <TextField
+        <FormTextField
           label="年"
           type="number"
           value={year}
@@ -152,7 +179,7 @@ export default function CalendarDialog({
           fullWidth
           slotProps={{ htmlInput: { min: 2000, max: 2100 } }}
         />
-        <TextField
+        <FormTextField
           label="タイトル"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -179,28 +206,19 @@ export default function CalendarDialog({
         {errorMessage && (
           <p style={{ color: "red", margin: 0 }}>{errorMessage}</p>
         )}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2, justifyContent: "space-between" }}>
-        <div>
-          {!isNew && (
-            <MuiButton
-              color="error"
-              onClick={handleDelete}
-              disabled={saving}
-            >
-              削除
-            </MuiButton>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <MuiButton onClick={onClose} disabled={saving}>
-            キャンセル
-          </MuiButton>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "保存中..." : "保存"}
-          </Button>
-        </div>
-      </DialogActions>
-    </Dialog>
+    </CommonDialog>
+    {!isNew && current && (
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="削除確認"
+        message={`${current.year}年のカレンダーを削除しますか？`}
+        confirmLabel="削除"
+        loadingConfirmLabel="削除中..."
+        loading={saving}
+      />
+    )}
+    </>
   );
 }

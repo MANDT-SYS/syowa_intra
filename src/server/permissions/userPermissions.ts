@@ -10,6 +10,8 @@ export type { UserAuthorityLevel } from "@/types/authority";
 export type UserPermissions = {
   userId: number;
   authorityLevel: UserAuthorityLevel;
+  /** プロフィール等で表示する権限名。AUTHORIZED_USERはauthority_masterを正本とする。 */
+  authorityLabel: string | null;
 
   isDeveloper: boolean;
   /** authority_user / authority_master による AUTHORIZED_USER の割当を持つか。DEVELOPER は含まない。 */
@@ -25,7 +27,8 @@ export type UserPermissions = {
 
 export const createUserPermissions = (
   userId: number,
-  authorityLevel: UserAuthorityLevel
+  authorityLevel: UserAuthorityLevel,
+  authorizedUserAuthorityName?: string
 ): UserPermissions => {
   const isDeveloper = authorityLevel === "DEVELOPER";
   const hasAuthorizedUserRole = authorityLevel === "AUTHORIZED_USER";
@@ -34,6 +37,12 @@ export const createUserPermissions = (
   return {
     userId,
     authorityLevel,
+    authorityLabel:
+      authorityLevel === "DEVELOPER"
+        ? "開発者"
+        : authorityLevel === "GENERAL"
+          ? "一般"
+          : authorizedUserAuthorityName?.trim() || null,
     isDeveloper,
     hasAuthorizedUserRole,
     canAccessManagement: canManageBusinessContent,

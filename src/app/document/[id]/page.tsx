@@ -16,7 +16,9 @@ import {
   getDocumentDetail,
 } from "@/app/document/server/read";
 import { getAllDivisions } from "@/server/divisions/getAllDivisions";
+import { getUserPermissions } from "@/server/permissions/getUserPermissions";
 import DocumentDetailApp from "@/app/document/components/DocumentDetailApp";
+import { Breadcrumbs } from "@/components/layouts/breadcrumbs/Breadcrumbs";
 import type { DivisionInfo } from "@/types/interface";
 
 export const metadata: Metadata = {
@@ -38,7 +40,8 @@ export default async function DocumentDetailPage({ params }: Props) {
   }
 
   // 認証 + 初期データ並列取得
-  const data = await withAuth(async () => {
+  const data = await withAuth(async (ctx) => {
+    const permissions = await getUserPermissions(ctx.user.userId);
     const detail = await getDocumentDetail(id);
     const categories = await getActiveCategories();
     const divisions = await getAllDivisions();
@@ -46,6 +49,7 @@ export default async function DocumentDetailPage({ params }: Props) {
       detail,
       categories,
       divisions: (divisions ?? []) as DivisionInfo[],
+      canManageDocuments: permissions.canManageDocuments,
     };
   });
 
@@ -53,11 +57,13 @@ export default async function DocumentDetailPage({ params }: Props) {
   if (!data.detail) notFound();
 
   return (
-    <section className="min-h-screen flex flex-col items-center px-4 py-8">
+    <>
+      <Breadcrumbs currentLabel={data.detail.title} />
+      <section className="min-h-screen flex flex-col items-center px-4 py-8">
       {/* セクションの幅設定 */}
       {/* <div className="w-full max-w-7xl"> */}
       {/* <div className="w-full max-w-[1500px] mx-auto"></div> */}
-      <div className="w-full max-w-screen-2xl mx-auto px-[70px]">
+      <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-[70px]">
  
         {/* 一覧へ戻るリンク */}
         <Link
@@ -72,12 +78,14 @@ export default async function DocumentDetailPage({ params }: Props) {
           detail={data.detail}
           categories={data.categories}
           divisions={data.divisions}
+          canManageDocuments={data.canManageDocuments}
         />
       </div>
 
       <footer className="mt-16 text-sm text-[#9a948c]">
         © 2026 昭和産業株式会社
       </footer>
-    </section>
+      </section>
+    </>
   );
 }

@@ -4,10 +4,6 @@ import * as React from "react";
 import {
   Box,
   Button as MuiButton,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControl,
   InputLabel,
   MenuItem,
@@ -15,6 +11,8 @@ import {
   Typography,
 } from "@mui/material";
 import Button from "@/components/elements/Button";
+import CommonDialog from "@/components/elements/CommonDialog";
+import ConfirmDialog from "@/components/elements/ConfirmDialog";
 import { changeAuthorityAction } from "@/app/management/authorities/actions";
 import type { AssignableAuthorityLevel, AuthorityUserListItem } from "@/types/authority";
 
@@ -80,23 +78,23 @@ export default function AuthorityChangeDialog({ open, current, onClose, onSaved 
 
   return (
     <>
-      <Dialog
+      <CommonDialog
         open={open && !confirmOpen}
         onClose={submitting ? undefined : onClose}
         maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 3, bgcolor: "#FAF6EF", border: "1px solid #E5E2DC" },
-        }}
+        title="権限を変更"
+        description={`${current.userName}さんの変更後の権限を選択してください。`}
+        actions={
+          <>
+            <MuiButton onClick={onClose} disabled={submitting} sx={{ color: "#5F5E5A" }}>
+              キャンセル
+            </MuiButton>
+            <Button onClick={handleOpenConfirmation} disabled={submitting}>
+              変更内容を確認
+            </Button>
+          </>
+        }
       >
-        <DialogTitle sx={{ pb: 0.5, fontWeight: 700, color: "#2C2C2A" }}>
-          権限を変更
-        </DialogTitle>
-        <Typography variant="body2" sx={{ px: 3, color: "#5F5E5A" }}>
-          {current.userName}さんの変更後の権限を選択してください。
-        </Typography>
-
-        <DialogContent sx={{ pt: 2 }}>
           <Box>
             <FormControl fullWidth size="small" disabled={submitting}>
               <InputLabel id="authority-level-label">変更後の権限</InputLabel>
@@ -117,48 +115,20 @@ export default function AuthorityChangeDialog({ open, current, onClose, onSaved 
               {error}
             </Typography>
           )}
-        </DialogContent>
+      </CommonDialog>
 
-        <DialogActions sx={{ px: 3, pb: 2, justifyContent: "flex-end", gap: 1 }}>
-          <MuiButton onClick={onClose} disabled={submitting} sx={{ color: "#5F5E5A" }}>
-            キャンセル
-          </MuiButton>
-          <Button onClick={handleOpenConfirmation} disabled={submitting}>
-            変更内容を確認
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
+      <ConfirmDialog
         open={open && confirmOpen}
-        onClose={submitting ? undefined : () => setConfirmOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 3, bgcolor: "#FAF6EF", border: "1px solid #E5E2DC" },
-        }}
-      >
-        <DialogTitle sx={{ pb: 0.5, fontWeight: 700, color: "#2C2C2A" }}>
-          変更確認
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: "#5F5E5A" }}>
-            {current.userName}さんを「{labelForAssignableAuthority(targetLevel)}」に変更しますか？
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, justifyContent: "flex-end", gap: 1 }}>
-          <MuiButton
-            onClick={() => setConfirmOpen(false)}
-            disabled={submitting}
-            sx={{ color: "#5F5E5A" }}
-          >
-            戻る
-          </MuiButton>
-          <Button onClick={handleConfirm} disabled={submitting}>
-            {submitting ? "変更中..." : "変更する"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirm}
+        title="変更確認"
+        message={`${current.userName}さんを「${labelForAssignableAuthority(targetLevel)}」に変更しますか？`}
+        confirmLabel="変更する"
+        loadingConfirmLabel="変更中..."
+        cancelLabel="戻る"
+        loading={submitting}
+        disableCloseWhileLoading
+      />
     </>
   );
 }

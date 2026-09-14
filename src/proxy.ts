@@ -47,7 +47,7 @@ function isAllowed(ip: string): boolean {
 }
 
 // 認証＆セキュリティヘッダ付与用ミドルウェア
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
 
   // 開発環境判定（unsafe-eval許可制御用）
   const isDev = process.env.NODE_ENV === "development";

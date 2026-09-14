@@ -16,7 +16,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
-  Chip,
   IconButton,
   Paper,
   Stack,
@@ -34,12 +33,15 @@ import DownloadIcon from "@mui/icons-material/Download";
 import DocumentEditDialog from "@/app/document/components/DocumentEditDialog";
 import DocumentRevisionDialog from "@/app/document/components/DocumentRevisionDialog";
 import DocumentDeleteDialog from "@/app/document/components/DocumentDeleteDialog";
+import ResultDialog from "@/components/elements/ResultDialog";
+import CategoryChip from "@/components/elements/CategoryChip";
 import type { DivisionInfo, DocumentCategory, DocumentDetailData } from "@/types/interface";
 
 type Props = {
   detail: DocumentDetailData;
   categories: DocumentCategory[];
   divisions: DivisionInfo[];
+  canManageDocuments: boolean;
 };
 
 // 日付 YYYY/MM/DD
@@ -80,21 +82,40 @@ const SectionCard = ({
   </Paper>
 );
 
-export default function DocumentDetailApp({ detail, categories, divisions }: Props) {
+export default function DocumentDetailApp({
+  detail,
+  categories,
+  divisions,
+  canManageDocuments,
+}: Props) {
   const router = useRouter();
   const [editOpen, setEditOpen] = React.useState(false);
   const [revisionOpen, setRevisionOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [resultMessage, setResultMessage] = React.useState("");
+  const currentInactiveCategory =
+    detail.category_id !== null &&
+    detail.category_name !== null &&
+    detail.category_active_flag === false
+      ? { id: detail.category_id, name: detail.category_name }
+      : null;
 
   // 編集ダイアログ内「削除」 → 編集を閉じて削除確認を開く
   const handleRequestDelete = () => {
+    if (!canManageDocuments) return;
     setEditOpen(false);
     setDeleteOpen(true);
   };
 
   // 保存系の onSaved 共通：サーバー側で revalidatePath 済みだが念のため再取得
-  const handleSaved = () => {
+  const handleEditSaved = () => {
     router.refresh();
+    setResultMessage("更新が完了しました。");
+  };
+
+  const handleRevisionSaved = () => {
+    router.refresh();
+    setResultMessage("改版が完了しました。");
   };
 
   // ファイルダウンロード（同一オリジン API 経由で保存）
@@ -132,11 +153,7 @@ export default function DocumentDetailApp({ detail, categories, divisions }: Pro
             {detail.title}
           </Typography>
           {detail.category_name && (
-            <Chip
-              label={detail.category_name}
-              size="small"
-              sx={{ bgcolor: "#E8C8B0", color: "#5F4A2A", fontWeight: 600, borderRadius: "999px" }}
-            />
+            <CategoryChip name={detail.category_name} />
           )}
           {detail.current_revision_number !== null && (
             <Typography variant="caption" sx={{ color: "#888780" }}>
@@ -326,10 +343,12 @@ export default function DocumentDetailApp({ detail, categories, divisions }: Pro
       <DocumentEditDialog
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        onSaved={handleSaved}
+        onSaved={handleEditSaved}
         onRequestDelete={handleRequestDelete}
+        canManageDocuments={canManageDocuments}
         current={detail}
         categories={categories}
+        currentInactiveCategory={currentInactiveCategory}
         divisions={divisions}
       />
 
@@ -337,19 +356,27 @@ export default function DocumentDetailApp({ detail, categories, divisions }: Pro
       <DocumentRevisionDialog
         open={revisionOpen}
         onClose={() => setRevisionOpen(false)}
-        onSaved={handleSaved}
+        onSaved={handleRevisionSaved}
         current={detail}
         categories={categories}
+        currentInactiveCategory={currentInactiveCategory}
         divisions={divisions}
       />
 
       {/* 削除確認ダイアログ */}
-      <DocumentDeleteDialog
-        open={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
-        documentId={detail.id}
-        documentTitle={detail.title}
-        redirectAfterDelete
+      {canManageDocuments && (
+        <DocumentDeleteDialog
+          open={deleteOpen}
+          onClose={() => setDeleteOpen(false)}
+          documentId={detail.id}
+          documentTitle={detail.title}
+          redirectAfterDelete
+        />
+      )}
+      <ResultDialog
+        open={Boolean(resultMessage)}
+        message={resultMessage}
+        onClose={() => setResultMessage("")}
       />
      {/* </Paper> */}
    </Box>

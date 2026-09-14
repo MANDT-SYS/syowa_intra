@@ -46,7 +46,7 @@ export default async function DocumentPage() {
      {/* セクションの幅設定 */}
       {/* <div className="w-full max-w-7xl"> */}
       {/* <div className="w-full max-w-[1500px] mx-auto"> */}
-      <div className="w-full max-w-screen-2xl mx-auto px-[70px]">
+      <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-[70px]">
         {/* 書類一覧、カテゴリ一覧、部署一覧のデータをDocumentAppに渡す */}
         <DocumentApp
           initialDocuments={documents}//書類一覧

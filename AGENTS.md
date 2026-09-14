@@ -28,7 +28,7 @@
 6. 対象機能の `server/read.ts`、`server/write.ts`
 7. 対象機能のコンポーネント
 8. DB変更時は `docs/intra_db.sql`
-9. 認証・セキュリティ関連の変更時は `src/middleware.ts`、`src/lib/withAuth.ts`、`src/lib/auth0.ts`、`src/lib/supabase.ts`
+9. 認証・セキュリティ関連の変更時は `src/proxy.ts`、`src/lib/withAuth.ts`、`src/lib/auth0.ts`、`src/lib/supabase.ts`
 
 ## 4. 技術構成
 
@@ -64,8 +64,8 @@
 - 内部知識や旧バージョンの慣例だけで、App Router、Server Action、Route Handler、Middleware / Proxyを実装・変更しません。
 - `node_modules/` は参照専用です。絶対に編集しません。
 - 原則として Server Component を使います。ブラウザAPI、イベント処理、状態管理が必要な場合だけ `"use client"` を付けます。
-- `src/middleware.ts` はIP制限、Auth0、CSP、matcherを担う全体影響の大きいファイルです。変更前に対象ルート、認証、セキュリティヘッダーへの影響を確認します。
-- Next.js 16では`middleware.ts`の旧file conventionにdeprecated警告がありますが、現在の`src/middleware.ts`は有効です。`proxy.ts`への移行・改名は明示的な依頼なしに行いません。
+- `src/proxy.ts` はIP制限、Auth0、CSP、matcherを担う全体影響の大きいファイルです。変更前に対象ルート、認証、セキュリティヘッダーへの影響を確認します。
+- Next.js 16のrequest boundaryは`src/proxy.ts`です。明示的な依頼なしに、ファイル名・matcher・認証処理を変更しません。
 - `src/app/middleware.ts`は削除済みです。古い資料や過去の調査結果を根拠に復活させません。
 
 ## 7. 認証・認可
@@ -77,6 +77,10 @@
 - 認証と認可を混同しません。現状の `withAuth` はロール認可を保証していません。
 - Phase 5の共通認可は `getUserPermissions` と `assertCan*` を使用します。DEVELOPERは `UserInfo.userId === ConstList.MASTER_AUTHORITY` だけで判定する開発者本人専用の特別権限であり、DBから付与・解除しません。
 - AUTHORIZED_USERは `authority_user` と有効な `authority_master` の組合せで判定します。DEVELOPERとAUTHORIZED_USERは権限設定ページの閲覧・他ユーザーの権限変更が可能で、GENERALは利用できません。認可には必ず `withAuth` で得たactorUserIdを使い、画面由来のtargetUserIdを使いません。
+- 管理系Server ActionはUIの表示制御だけに依存せず、`withAuth`でactorUserIdを取得した直後に対応する`assertCan*`を実行してから入力検証・DB・Storage処理へ進みます。書類・カレンダー・カテゴリの削除は、それぞれ対応する`assertCanManage*`を通します。
+- Headerの管理画面導線は、Server Componentで`getUserPermissions`から得る`canAccessManagement`を正とします。Client ComponentへServer-onlyの認可関数をimportせず、`accountancyAuthorityId`や個別のuserId比較で新しい認可判定を行いません。
+- Headerのプロフィールは独立した`/my_page` Routeではなく、Serverで組み立てた表示専用データをPopoverへ渡して表示します。ClientからuserIdを指定してプロフィールを再取得しません。
+- Pageで`AuthorizationError`を扱う場合は、Server側の`assertCan*`を維持したまま安全な権限不足UIへ変換します。`PermissionResolutionError`は権限不足と混同せず、内部情報を含まない確認失敗メッセージにします。Server Actionの想定される認可エラーは既存のResult型で安全なメッセージとして返します。
 - 権限要件が不明な場合は推測して実装しません。
 - 書類、カテゴリ、カレンダーの登録・編集・削除権限を変更する場合は、画面上の表示だけでなく、Server Action側の制御も確認します。
 - クライアント側で操作を隠すだけをアクセス制御としません。
@@ -87,7 +91,7 @@
 - `SUPABASE_SERVICE_ROLE_KEY`、Auth0シークレット、外部APIキー、DBパスワードを出力しません。
 - `SUPABASE_SERVICE_ROLE_KEY` を使用するモジュールはサーバー専用です。Client Componentからimportしません。
 - セッション、ユーザー情報、書類一覧、ファイル情報を安易にログ出力しません。
-- `src/middleware.ts` のIP制限、Auth0、CSPを変える場合は全体影響を確認します。
+- `src/proxy.ts` のIP制限、Auth0、CSPを変える場合は全体影響を確認します。
 - アップロード処理ではクライアント側の `accept` 属性だけを検証とみなしません。ファイル種別、MIME、容量のServer側検証方針を維持します。
 - 全アップロードのアプリ上限は50 MiBです。`MAX_UPLOAD_FILE_SIZE_BYTES`を再利用し、Client Component、Server Action、Storage upload直前で検証します。Server Actions / proxyの受信上限55mbを勝手に変更しません。
 - 外部入力には既存の `sanitizeText` などを利用し、既存の検証方針を確認します。
@@ -108,6 +112,7 @@
 - DBのbigint物理列は維持し、Drizzleでは対象IDを`mode: "number"`で扱います。書類・カテゴリ・revision等のDB内部数値IDは`parsePositiveSafeInteger`、calendar UUIDは`parseUuid`で検証します。外部`UserInfo.userId`は負数を含むsafe integerを取り得るため、権限設定の対象IDは`parseExternalUserId`で検証します。`ConstList.MASTER_AUTHORITY`（現在は`0`）だけはDEVELOPER本人として明示的に変更対象から除外します。
 - `documents`、`revisions`、Storageファイルの整合性を崩しません。revisionの正式テーブル名は`revisions`であり、`document_revisions`は使用しません。
 - documents・categoriesは論理削除です。通常取得は`deleted_at IS NULL`、削除対象0件は対象なしエラーとします。書類削除ではrevisionsも論理削除し、Storage objectは残します。
+- カテゴリは `deleted_at IS NULL` と `active_flag` により、有効・使用停止・論理削除の3状態を持ちます。新規書類およびカテゴリ変更先には有効カテゴリだけを使い、既存書類は使用停止カテゴリ名を保持して表示します。有効な書類から使用中のカテゴリはServer側で論理削除を拒否します。使用停止・再有効化もServer Actionで`assertCanManageDocumentCategories`を通し、状態更新と書類側のカテゴリ検証はtransaction内の行ロックで整合させます。
 - calendarはDB・Storageとも物理削除します。Storage削除にはDBから返された`storage_path`を使い、クライアント由来の推測pathを使いません。
 - DB変更時に `docs/intra_db.sql` と実DBが一致すると仮定しません。SQL Editor適用後の`db:pull`結果と差分を確認してから定義書を更新します。RLS、制約、インデックス、Storage公開設定はコードだけでは確認できない場合があります。
 - 明示的な依頼なしにSQL、マイグレーション、テーブル変更、RLS変更、Storage操作を実行しません。SQLが必要なら、実行前にコマンド全文、SQL全文、使用環境変数、READ/WRITE、対象、影響、理由を提示して承認を得ます。
@@ -142,11 +147,15 @@
 - `next/font/google`、Geist、Geist Monoは現在使用しません。build時のGoogle Fonts外部通信依存は撤去済みです。
 - system fontを使用し、sans-serifは`Arial, Helvetica, sans-serif`、monospaceは`"Courier New", Courier, monospace`です。
 - system font化後、`npm run lint`、`npx tsc --noEmit`、`npm run build`は成功確認済みです。Google Fonts取得失敗によるproduction build未確認は解消済みです。
-- `src/middleware.ts`のfile conventionに関するdeprecated警告は残っていますが、build失敗ではありません。警告解消を目的に無断で`proxy.ts`へ移行しません。
+- `src/proxy.ts`へ移行済みです。Next.jsのrequest boundaryに関する警告を理由に、matcher・Auth0・IP制限・CSPの挙動を無断変更しません。
 
 ## 13. コーディング規約
 
 - TypeScriptを使用し、`any` は原則使用しません。型を明示し、既存の共通型があれば再利用します。
+- 操作成功の通知にはSnackbarを使用せず、共通の`ResultDialog`を使用します。処理前の削除・状態変更・権限変更確認には共通の`ConfirmDialog`を使用し、入力検証・操作失敗・権限不足・予期しない全体エラーの表示は、それぞれ既存のUI方式を維持します。
+- DataGridの共通化は、表示style・locale・pagination等の業務非依存設定に限定します。columns、rows、getRowId、検索、filter、action列は各機能側に保持します。
+- ページ遷移・主要データ取得中はRoute Segmentの`loading.tsx`によるSkeleton Loadingを基本とし、Skeleton表示のためにデータ取得方式や業務処理を変更しません。Loading、Empty、Error、Successは別の状態として扱います。Empty Stateは取得完了後に0件と確定した場合だけ表示し、ErrorをEmptyとして扱いません。
+- Chipは万能Componentへ統合せず、Authority・Categoryなど意味単位で共通化します。Chip Componentは表示専用とし、権限・状態の判定やデータ取得を行いません。
 - importは `@/*` エイリアスを優先し、既存のファイル配置と命名に合わせます。
 - DB・Storage処理は `server/read.ts` と `server/write.ts` の責務分離を維持します。クライアントからの更新はServer Actionを経由します。
 - ユーザー向けエラー文とコメントは日本語を基本とします。不要なコメントや、コードをそのまま説明するコメントは増やしません。
@@ -169,7 +178,7 @@
 
 特に慎重に扱います。
 
-- `src/middleware.ts`
+- `src/proxy.ts`
 - `src/lib/withAuth.ts`
 - `src/lib/supabase.ts`
 - `src/app/document/server/write.ts`

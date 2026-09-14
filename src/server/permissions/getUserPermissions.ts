@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { hasActiveAuthorizedUserRole } from "@/server/authorities/read";
+import { getActiveAuthorizedUserAuthorityName } from "@/server/authorities/read";
 import { withAuth } from "@/lib/withAuth";
 import { ConstList } from "@/utils/ConstList";
 import {
@@ -23,10 +23,12 @@ const resolveUserPermissions = cache(
     }
 
     try {
-      const hasAuthorizedUserRole = await hasActiveAuthorizedUserRole(userId);
+      const authorizedUserAuthority =
+        await getActiveAuthorizedUserAuthorityName(userId);
       return createUserPermissions(
         userId,
-        hasAuthorizedUserRole ? "AUTHORIZED_USER" : "GENERAL"
+        authorizedUserAuthority ? "AUTHORIZED_USER" : "GENERAL",
+        authorizedUserAuthority?.authorityName
       );
     } catch {
       console.error("[getUserPermissions] 権限情報の取得に失敗しました。");
